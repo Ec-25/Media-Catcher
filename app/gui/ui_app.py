@@ -41,10 +41,6 @@ class Ui_MainWindow(object):
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.tw = QTreeWidget(self.gb_status)
         __qtreewidgetitem = QTreeWidgetItem()
-        __qtreewidgetitem.setTextAlignment(5, Qt.AlignCenter);
-        __qtreewidgetitem.setTextAlignment(4, Qt.AlignCenter);
-        __qtreewidgetitem.setTextAlignment(3, Qt.AlignCenter);
-        __qtreewidgetitem.setTextAlignment(2, Qt.AlignCenter);
         self.tw.setHeaderItem(__qtreewidgetitem)
         self.tw.setObjectName(u"tw")
         self.tw.header().setVisible(True)
