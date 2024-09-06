@@ -1,0 +1,4 @@
+# paths
+__pycache__/
+.vscode/
+env/
