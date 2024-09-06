@@ -5,16 +5,15 @@ from os import environ, path, makedirs, pathsep, stat as stat_result, chmod
 from sys import argv
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QWidget, QMessageBox, QTreeWidgetItem, QProgressBar
+from PySide6 import QtCore as qtc, QtWidgets as qtw
 
 from gui.ui_app import Ui_MainWindow
 from gui.ui_download import Ui_Download
-from threads import DownloadThread
+from threads import DownloadThread, ItemThread
 
 
-class DownloadWindow(QWidget, Ui_Download):
-    finished = Signal()
+class DownloadWindow(qtw.QWidget, Ui_Download):
+    finished = qtc.Signal()
 
     def __init__(self):
         super().__init__()
@@ -28,7 +27,7 @@ class DownloadWindow(QWidget, Ui_Download):
             self.show()
             self.start_download()
         else:
-            QTimer.singleShot(0, self.finished.emit)
+            qtc.QTimer.singleShot(0, self.finished.emit)
 
     def get_missings(self):
         binaries = {
@@ -94,11 +93,12 @@ class DownloadWindow(QWidget, Ui_Download):
             self.finished.emit()
 
 
-class MainWindow(QMainWindow, Ui_MainWindow):
+class MainWindow(qtw.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         self.tw.setColumnWidth(0, 200)
+        self.le_url.setFocus()
         self.le_path.setText(path.expanduser("~\\Downloads"))
         self.statusBar.showMessage("Version 0.1 | by @Ec-25")
 
@@ -106,24 +106,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.dwld.finished.connect(self.dwld.close)
         self.dwld.finished.connect(self.show)
 
-        self.index = 0
         self.to_download = {}
         self.threads = {}
+        self.index = 0
 
         self.tb_filename.clicked.connect(self.reset_filename)
         self.tb_path.clicked.connect(self.select_path)
         self.ob_type.currentTextChanged.connect(self.update_type_media)
-        self.pb_add.clicked.connect(self.add_url)
+        self.pb_add.clicked.connect(self.button_add)
         self.tw.itemClicked.connect(self.remove_item)
-        self.pb_clear.clicked.connect(self.clear_list)
+        self.pb_clear.clicked.connect(self.button_clear)
+        self.pb_download.clicked.connect(self.button_download)
 
     def reset_filename(self):
         self.le_filename.setText("")
 
     def select_path(self):
-        file_dialog = QFileDialog()
-        file_dialog.setFileMode(QFileDialog.FileMode.Directory)
-        file_dialog.setOption(QFileDialog.Option.ShowDirsOnly)
+        file_dialog = qtw.QFileDialog()
+        file_dialog.setFileMode(qtw.QFileDialog.FileMode.Directory)
+        file_dialog.setOption(qtw.QFileDialog.Option.ShowDirsOnly)
         file_dialog.exec()
         self.le_path.setText(
             file_dialog.selectedFiles()[0]
@@ -143,47 +144,121 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.cb_subtitles.setChecked(False)
             self.cb_subtitles.setEnabled(False)
 
-    def add_url(self):
+    def remove_item(self, item, column):
+        ret = qtw.QMessageBox.question(
+            self,
+            "Application Message",
+            f"Would you like to remove {item.text(0)} ?",
+            qtw.QMessageBox.StandardButton.Yes | qtw.QMessageBox.StandardButton.No,
+            qtw.QMessageBox.StandardButton.No,
+        )
+        if ret == qtw.QMessageBox.StandardButton.Yes:
+            if self.to_download.get(item.id):
+                self.to_download.pop(item.id)
+            elif threads := self.threads.get(item.id):
+                threads.stop()
+            self.tw.takeTopLevelItem(self.tw.indexOfTopLevelItem(item))
+
+    def button_add(self):
         url = self.le_url.text()
         path = self.le_path.text()
-        fmt = self.ob_type.currentText()
+        filename = self.le_filename.text()
+        if not filename:
+            filename = "%(title)s.%(ext)s"
+        type = self.ob_type.currentText()
+        subtitles = self.cb_subtitles.isChecked()
+        sublangs = self.le_subtitles.text()
+        qvideo = self.ob_qvideo.currentText()
+        fvideo = self.ob_fvideo.currentText()
+        qaudio = self.ob_qaudio.currentText()
+        faudio = self.ob_faudio.currentText()
+        metadata = self.cb_metadata.isChecked()
+        thumbnail = self.cb_thumbnail.isChecked()
+        noplaylist = self.cb_noplaylist.isChecked()
 
-        if not all([url, path, fmt]):
-            return QMessageBox.information(self, "Application Message", "Unable to add the download because some required fields are missing.\nRequired fields: Link, Path & Format.")
+        if not all([url, path, type]):
+            return qtw.QMessageBox.information(
+                self,
+                "Application Message",
+                "Unable to add the download because some required fields are missing.\nRequired fields: Link, Path & Format.",
+            )
 
-        item = QTreeWidgetItem(self.tw, [url, fmt, "-", "0%", "Queued", "-", "-"])
-        pb = QProgressBar()
-        pb.setStyleSheet("QProgressBar { margin-bottom: 3px;}")
+        item = qtw.QTreeWidgetItem(self.tw, [url, type, "-", "0%", "Queued", "-", "-"])
+        pb = qtw.QProgressBar()
+        pb.setStyleSheet("QProgressBar { margin-bottom: 3px; }")
         pb.setTextVisible(False)
         self.tw.setItemWidget(item, 3, pb)
-
-        item.id = self.index # type: ignore
+        item.id = self.index  # type: ignore
         self.le_url.clear()
-
+        self.to_download[self.index] = ItemThread(
+            item,
+            url,
+            path,
+            filename,
+            type,
+            subtitles,
+            sublangs,
+            qvideo,
+            fvideo,
+            qaudio,
+            faudio,
+            metadata,
+            thumbnail,
+            noplaylist,
+        )
         self.index += 1
 
-    def remove_item(self):
-        confirm = QMessageBox.question(self, "Application Message", "Are you sure you want to remove this item?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
-
-        if confirm == QMessageBox.StandardButton.Yes:
-            if self.to_download.get(self.tw.currentItem().id): # type: ignore
-                self.to_download.pop(self.tw.currentItem().id) # type: ignore
-
-
-            self.tw.takeTopLevelItem(self.tw.indexOfTopLevelItem(self.tw.currentItem()))
-
-    def clear_list(self):
+    def button_clear(self):
         if self.threads:
-            return QMessageBox.information(self, "Application Message", "Unable to clear the list because there is a download in progress.")
-        
+            return qtw.QMessageBox.critical(
+                self,
+                "Application Message",
+                "Unable to clear list because there are active downloads in progress.\n"
+                "Remove a download by clicking on it.",
+            )
+
         self.threads = {}
         self.to_download = {}
         self.tw.clear()
+
+    def button_download(self):
+        if not self.to_download:
+            return qtw.QMessageBox.information(
+                self,
+                "Application Message",
+                "Unable to download because there are no links in the list.",
+            )
+
+        for index, value in self.to_download.items():
+            self.threads[index] = value
+            self.threads[index].finished.connect(self.threads[index].deleteLater)
+            self.threads[index].finished.connect(lambda x: self.threads.pop(x))
+            self.threads[index].progress.connect(self.update_progress)
+            self.threads[index].start()
+
+        self.to_download = {}
+
+    def update_progress(self, item, emit_data):
+        try:
+            for data in emit_data:
+                index, update = data
+                if index != 3:
+                    item.setText(index, update)
+                else:
+                    pb = self.tw.itemWidget(item, index)
+                    pb.setValue(round(float(update.replace("%", ""))))  # type: ignore
+        except AttributeError:
+            return qtw.QMessageBox.information(
+                self,
+                "Application Error",
+                f"Download ({item.id}) no longer exists",
+            )
+
 
 if __name__ == "__main__":
     ROOT = Path(__file__).parent
     environ["PATH"] += pathsep + str(ROOT / "bin")
     # Start the application
-    app = QApplication(argv)
+    app = qtw.QApplication(argv)
     window = MainWindow()
     app.exit(app.exec())

@@ -1,522 +1,516 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-  <class>MainWindow</class>
-  <widget class="QMainWindow" name="MainWindow">
-    <property name="geometry">
-      <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>960</width>
-        <height>640</height>
-      </rect>
-    </property>
-    <property name="windowTitle">
-      <string>Media-Catcher</string>
-    </property>
-    <property name="windowIcon">
-      <iconset theme="media-optical" />
-    </property>
-    <widget class="QWidget" name="centralwidget">
-      <property name="font">
-        <font>
-          <pointsize>9</pointsize>
-        </font>
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>960</width>
+    <height>640</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Media-Catcher</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="media-optical"/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <layout class="QGridLayout" name="gridLayout" rowstretch="2,5" columnstretch="1,1,0">
+    <item row="1" column="0" colspan="3">
+     <widget class="QGroupBox" name="gb_status">
+      <property name="title">
+       <string>Status</string>
       </property>
-      <layout class="QGridLayout" name="gridLayout" rowstretch="2,5" columnstretch="1,1,0">
-        <item row="1" column="0" colspan="3">
-          <widget class="QGroupBox" name="gb_status">
-            <property name="title">
-              <string>Status</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_3">
-              <item row="0" column="0">
-                <widget class="QTreeWidget" name="tw">
-                  <attribute name="headerVisible">
-                    <bool>true</bool>
-                  </attribute>
-                  <column>
-                    <property name="text">
-                      <string>Title</string>
-                    </property>
-                  </column>
-                  <column>
-                    <property name="text">
-                      <string>Format</string>
-                    </property>
-                  </column>
-                  <column>
-                    <property name="text">
-                      <string>Size</string>
-                    </property>
-                    <property name="textAlignment">
-                      <set>AlignCenter</set>
-                    </property>
-                  </column>
-                  <column>
-                    <property name="text">
-                      <string>Progress</string>
-                    </property>
-                    <property name="textAlignment">
-                      <set>AlignCenter</set>
-                    </property>
-                  </column>
-                  <column>
-                    <property name="text">
-                      <string>Status</string>
-                    </property>
-                    <property name="textAlignment">
-                      <set>AlignCenter</set>
-                    </property>
-                  </column>
-                  <column>
-                    <property name="text">
-                      <string>Speed</string>
-                    </property>
-                    <property name="textAlignment">
-                      <set>AlignCenter</set>
-                    </property>
-                  </column>
-                  <column>
-                    <property name="text">
-                      <string>ETA</string>
-                    </property>
-                  </column>
-                </widget>
-              </item>
-            </layout>
-          </widget>
-        </item>
-        <item row="0" column="2">
-          <widget class="QGroupBox" name="gb_controls">
-            <property name="title">
-              <string>Controls</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-              <item>
-                <widget class="QPushButton" name="pb_add">
-                  <property name="toolTip">
-                    <string>
-                      &lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Add&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                    <string />
-                  </property>
-                  <property name="icon">
-                    <iconset theme="list-add" />
-                  </property>
-                  <property name="iconSize">
-                    <size>
-                      <width>20</width>
-                      <height>20</height>
-                    </size>
-                  </property>
-                </widget>
-              </item>
-              <item>
-                <widget class="QPushButton" name="pb_clear">
-                  <property name="toolTip">
-                    <string>
-                      &lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                    <string />
-                  </property>
-                  <property name="icon">
-                    <iconset theme="edit-delete" />
-                  </property>
-                  <property name="iconSize">
-                    <size>
-                      <width>20</width>
-                      <height>20</height>
-                    </size>
-                  </property>
-                </widget>
-              </item>
-              <item>
-                <widget class="QPushButton" name="pb_download">
-                  <property name="toolTip">
-                    <string>
-                      &lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Download&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                  </property>
-                  <property name="text">
-                    <string />
-                  </property>
-                  <property name="icon">
-                    <iconset theme="emblem-downloads" />
-                  </property>
-                  <property name="iconSize">
-                    <size>
-                      <width>20</width>
-                      <height>20</height>
-                    </size>
-                  </property>
-                </widget>
-              </item>
-            </layout>
-          </widget>
-        </item>
-        <item row="0" column="1">
-          <widget class="QGroupBox" name="gb_embeds">
-            <property name="title">
-              <string>Optional</string>
-            </property>
-            <property name="alignment">
-              <set>
-                Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-            </property>
-            <property name="flat">
-              <bool>false</bool>
-            </property>
-            <property name="checkable">
-              <bool>false</bool>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_2">
-              <item row="2" column="2">
-                <widget class="QLabel" name="lb_faudio">
-                  <property name="text">
-                    <string>Format Audio</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="0" column="3">
-                <widget class="QLineEdit" name="le_subtitles">
-                  <property name="enabled">
-                    <bool>false</bool>
-                  </property>
-                  <property name="placeholderText">
-                    <string>en, es</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="1" column="1">
-                <widget class="QComboBox" name="ob_qvideo">
-                  <item>
-                    <property name="text">
-                      <string>Best</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>Low</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>360p</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>480p</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>720p</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>1080p</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>1440p</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>2160p</string>
-                    </property>
-                  </item>
-                </widget>
-              </item>
-              <item row="2" column="0">
-                <widget class="QLabel" name="lb_fvideo">
-                  <property name="text">
-                    <string>Format Video</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="0" column="2">
-                <widget class="QCheckBox" name="cb_subtitles">
-                  <property name="text">
-                    <string>Subtitles</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="1" column="3">
-                <widget class="QComboBox" name="ob_qaudio">
-                  <item>
-                    <property name="text">
-                      <string>Best</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>Low</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>64k</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>96k</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>128k</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>192k</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>256k</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>320k</string>
-                    </property>
-                  </item>
-                </widget>
-              </item>
-              <item row="0" column="1">
-                <widget class="QComboBox" name="ob_type">
-                  <item>
-                    <property name="text">
-                      <string>Video</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>Audio</string>
-                    </property>
-                  </item>
-                </widget>
-              </item>
-              <item row="1" column="0">
-                <widget class="QLabel" name="lb_qvideo">
-                  <property name="text">
-                    <string>Quality Video</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="1" column="2">
-                <widget class="QLabel" name="lb_qaudio">
-                  <property name="text">
-                    <string>Quality Audio</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="2" column="1">
-                <widget class="QComboBox" name="ob_fvideo">
-                  <item>
-                    <property name="text">
-                      <string>m4v</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>mp4</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>mov</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>mkv</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>mka</string>
-                    </property>
-                  </item>
-                </widget>
-              </item>
-              <item row="2" column="3">
-                <widget class="QComboBox" name="ob_faudio">
-                  <item>
-                    <property name="text">
-                      <string>m4a</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>mp4</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>ogg</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>opus</string>
-                    </property>
-                  </item>
-                  <item>
-                    <property name="text">
-                      <string>flac</string>
-                    </property>
-                  </item>
-                </widget>
-              </item>
-              <item row="0" column="0">
-                <widget class="QLabel" name="lb_type">
-                  <property name="text">
-                    <string>Type</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="0" column="4">
-                <widget class="QCheckBox" name="cb_metadata">
-                  <property name="text">
-                    <string>Metadata</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="1" column="4">
-                <widget class="QCheckBox" name="cb_thumbnail">
-                  <property name="text">
-                    <string>Thumbnail</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="2" column="4">
-                <widget class="QCheckBox" name="cb_noplaylist">
-                  <property name="text">
-                    <string>NoPlaylist</string>
-                  </property>
-                </widget>
-              </item>
-            </layout>
-          </widget>
-        </item>
-        <item row="0" column="0">
-          <widget class="QGroupBox" name="gb_args">
-            <property name="title">
-              <string>Arguments</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_4" columnstretch="0,0,0,0">
-              <item row="1" column="1" colspan="3">
-                <widget class="QLineEdit" name="le_url">
-                  <property name="placeholderText">
-                    <string>https://www.youtube.com/watch?v=</string>
-                  </property>
-                  <property name="clearButtonEnabled">
-                    <bool>true</bool>
-                  </property>
-                </widget>
-              </item>
-              <item row="3" column="1" colspan="2">
-                <widget class="QLineEdit" name="le_path">
-                  <property name="enabled">
-                    <bool>false</bool>
-                  </property>
-                  <property name="readOnly">
-                    <bool>false</bool>
-                  </property>
-                  <property name="placeholderText">
-                    <string>~\Downloads</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="2" column="0">
-                <widget class="QLabel" name="lb_filename">
-                  <property name="text">
-                    <string>Filename</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="1" column="0">
-                <widget class="QLabel" name="lb_url">
-                  <property name="minimumSize">
-                    <size>
-                      <width>0</width>
-                      <height>0</height>
-                    </size>
-                  </property>
-                  <property name="text">
-                    <string>Url</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="3" column="0">
-                <widget class="QLabel" name="lb_path">
-                  <property name="minimumSize">
-                    <size>
-                      <width>0</width>
-                      <height>0</height>
-                    </size>
-                  </property>
-                  <property name="text">
-                    <string>Path</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="3" column="3">
-                <widget class="QToolButton" name="tb_path">
-                  <property name="icon">
-                    <iconset theme="folder-open" />
-                  </property>
-                </widget>
-              </item>
-              <item row="2" column="1">
-                <widget class="QLineEdit" name="le_filename">
-                  <property name="placeholderText">
-                    <string>%(title)s.%(ext)s</string>
-                  </property>
-                </widget>
-              </item>
-              <item row="2" column="3">
-                <widget class="QToolButton" name="tb_filename">
-                  <property name="text">
-                    <string />
-                  </property>
-                  <property name="icon">
-                    <iconset theme="edit-undo" />
-                  </property>
-                </widget>
-              </item>
-            </layout>
-          </widget>
-        </item>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QTreeWidget" name="tw">
+         <attribute name="headerVisible">
+          <bool>true</bool>
+         </attribute>
+         <column>
+          <property name="text">
+           <string>Title</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Format</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Size</string>
+          </property>
+          <property name="textAlignment">
+           <set>AlignCenter</set>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Progress</string>
+          </property>
+          <property name="textAlignment">
+           <set>AlignCenter</set>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Status</string>
+          </property>
+          <property name="textAlignment">
+           <set>AlignCenter</set>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Speed</string>
+          </property>
+          <property name="textAlignment">
+           <set>AlignCenter</set>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>ETA</string>
+          </property>
+         </column>
+        </widget>
+       </item>
       </layout>
-    </widget>
-    <widget class="QStatusBar" name="statusBar" />
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QGroupBox" name="gb_controls">
+      <property name="title">
+       <string>Controls</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QPushButton" name="pb_add">
+         <property name="toolTip">
+          <string>
+                      &lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Add&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset theme="list-add"/>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pb_clear">
+         <property name="toolTip">
+          <string>
+                      &lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-delete"/>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pb_download">
+         <property name="toolTip">
+          <string>
+                      &lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Download&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset theme="emblem-downloads"/>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QGroupBox" name="gb_embeds">
+      <property name="title">
+       <string>Optional</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+      </property>
+      <property name="flat">
+       <bool>false</bool>
+      </property>
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="2" column="2">
+        <widget class="QLabel" name="lb_faudio">
+         <property name="text">
+          <string>Format Audio</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QLineEdit" name="le_subtitles">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="placeholderText">
+          <string>en, es</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="ob_qvideo">
+         <item>
+          <property name="text">
+           <string>Best</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Worst</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>360p</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>480p</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>720p</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>1080p</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>1440p</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>2160p</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lb_fvideo">
+         <property name="text">
+          <string>Format Video</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QCheckBox" name="cb_subtitles">
+         <property name="text">
+          <string>Subtitles</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QComboBox" name="ob_qaudio">
+         <item>
+          <property name="text">
+           <string>Best</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Worst</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>64k</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>96k</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>128k</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>192k</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>256k</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>320k</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="ob_type">
+         <item>
+          <property name="text">
+           <string>Video</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Audio</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lb_qvideo">
+         <property name="text">
+          <string>Quality Video</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="lb_qaudio">
+         <property name="text">
+          <string>Quality Audio</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="ob_fvideo">
+         <item>
+          <property name="text">
+           <string>m4v</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>mp4</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>mov</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>mkv</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>mka</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="QComboBox" name="ob_faudio">
+         <item>
+          <property name="text">
+           <string>m4a</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>mp3</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>opus</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>flac</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="lb_type">
+         <property name="text">
+          <string>Type</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <widget class="QCheckBox" name="cb_metadata">
+         <property name="text">
+          <string>Metadata</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="4">
+        <widget class="QCheckBox" name="cb_thumbnail">
+         <property name="text">
+          <string>Thumbnail</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4">
+        <widget class="QCheckBox" name="cb_noplaylist">
+         <property name="text">
+          <string>NoPlaylist</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QGroupBox" name="gb_args">
+      <property name="title">
+       <string>Arguments</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4" columnstretch="0,0,0,0">
+       <item row="1" column="1" colspan="3">
+        <widget class="QLineEdit" name="le_url">
+         <property name="placeholderText">
+          <string>https://www.youtube.com/watch?v=</string>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1" colspan="2">
+        <widget class="QLineEdit" name="le_path">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="readOnly">
+          <bool>false</bool>
+         </property>
+         <property name="placeholderText">
+          <string>~\Downloads</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lb_filename">
+         <property name="text">
+          <string>Filename</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lb_url">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Url</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="lb_path">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Path</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="3">
+        <widget class="QToolButton" name="tb_path">
+         <property name="icon">
+          <iconset theme="folder-open"/>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="le_filename">
+         <property name="placeholderText">
+          <string>%(title)s.%(ext)s</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="QToolButton" name="tb_filename">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-undo"/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
   </widget>
-  <resources />
-  <connections>
-    <connection>
-      <sender>cb_subtitles</sender>
-      <signal>toggled(bool)</signal>
-      <receiver>le_subtitles</receiver>
-      <slot>setEnabled(bool)</slot>
-      <hints>
-        <hint type="sourcelabel">
-          <x>635</x>
-          <y>59</y>
-        </hint>
-        <hint type="destinationlabel">
-          <x>729</x>
-          <y>59</y>
-        </hint>
-      </hints>
-    </connection>
-  </connections>
+  <widget class="QStatusBar" name="statusBar"/>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>cb_subtitles</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>le_subtitles</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>635</x>
+     <y>59</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>729</x>
+     <y>59</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
