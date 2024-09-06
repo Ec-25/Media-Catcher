@@ -5,8 +5,8 @@ from os import environ, path, makedirs, pathsep, stat as stat_result, chmod
 from sys import argv
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, Signal
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QWidget
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QWidget, QMessageBox, QTreeWidgetItem, QProgressBar
 
 from gui.ui_app import Ui_MainWindow
 from gui.ui_download import Ui_Download
@@ -113,6 +113,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tb_filename.clicked.connect(self.reset_filename)
         self.tb_path.clicked.connect(self.select_path)
         self.ob_type.currentTextChanged.connect(self.update_type_media)
+        self.pb_add.clicked.connect(self.add_url)
+        self.tw.itemClicked.connect(self.remove_item)
+        self.pb_clear.clicked.connect(self.clear_list)
 
     def reset_filename(self):
         self.le_filename.setText("")
@@ -140,6 +143,42 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.cb_subtitles.setChecked(False)
             self.cb_subtitles.setEnabled(False)
 
+    def add_url(self):
+        url = self.le_url.text()
+        path = self.le_path.text()
+        fmt = self.ob_type.currentText()
+
+        if not all([url, path, fmt]):
+            return QMessageBox.information(self, "Application Message", "Unable to add the download because some required fields are missing.\nRequired fields: Link, Path & Format.")
+
+        item = QTreeWidgetItem(self.tw, [url, fmt, "-", "0%", "Queued", "-", "-"])
+        pb = QProgressBar()
+        pb.setStyleSheet("QProgressBar { margin-bottom: 3px;}")
+        pb.setTextVisible(False)
+        self.tw.setItemWidget(item, 3, pb)
+
+        item.id = self.index # type: ignore
+        self.le_url.clear()
+
+        self.index += 1
+
+    def remove_item(self):
+        confirm = QMessageBox.question(self, "Application Message", "Are you sure you want to remove this item?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+
+        if confirm == QMessageBox.StandardButton.Yes:
+            if self.to_download.get(self.tw.currentItem().id): # type: ignore
+                self.to_download.pop(self.tw.currentItem().id) # type: ignore
+
+
+            self.tw.takeTopLevelItem(self.tw.indexOfTopLevelItem(self.tw.currentItem()))
+
+    def clear_list(self):
+        if self.threads:
+            return QMessageBox.information(self, "Application Message", "Unable to clear the list because there is a download in progress.")
+        
+        self.threads = {}
+        self.to_download = {}
+        self.tw.clear()
 
 if __name__ == "__main__":
     ROOT = Path(__file__).parent
