@@ -86,9 +86,26 @@ class DownloadThread(qtc.QThread):
         shutil.move(temp_file.name, self.filename)
 
 
-class ItemThread(qtc.QThread):
+class ItemSignal(qtc.QObject):
+    """
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+        - finished = qtc.Signal(int)
+        - progress = qtc.Signal(object, list)
+    """
+
     finished = qtc.Signal(int)
-    progress = qtc.Signal(object, list)
+    progress = qtc.Signal(object, tuple)
+
+
+class ItemWorker(qtc.QRunnable):
+    """
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+    """
 
     def __init__(
         self,
@@ -107,7 +124,9 @@ class ItemThread(qtc.QThread):
         thumbnail: bool,
         noplaylist: bool,
     ) -> None:
-        super().__init__()
+        super(ItemWorker, self).__init__()
+        self.signals = ItemSignal()
+
         self.item = item
         self.url = url
         self.path = path
@@ -172,7 +191,10 @@ class ItemThread(qtc.QThread):
 
             else:
                 args.extend(
-                    ["-f", f"bv*[height<={self.qvideo[:-1]}]+ba/b[height<={self.qvideo[:-1]}]"]
+                    [
+                        "-f",
+                        f"bv*[height<={self.qvideo[:-1]}]+ba/b[height<={self.qvideo[:-1]}]",
+                    ]
                 )
 
             args.extend(["--recode-video", self.fvideo])
@@ -207,7 +229,11 @@ class ItemThread(qtc.QThread):
         with qtc.QMutexLocker(self.mutex):
             self._stop = True
 
+    @qtc.Slot()
     def run(self) -> None:
+        """
+        Initialise the runner function.
+        """
         create_window = subprocess.CREATE_NO_WINDOW if platform == "win32" else 0
         command = self.build_command()
         error = False
@@ -227,43 +253,47 @@ class ItemThread(qtc.QThread):
 
                 if line.startswith("{"):
                     title = json.loads(line)["title"]
-                    self.progress.emit(
-                        self.item,
-                        [(TITLE, title), (STATUS, "Processing")],
+                    self.signals.progress.emit(
+                        self.item, ((TITLE, title), (STATUS, "Processing"))
                     )
+
                 elif line.lower().startswith("downloading"):
                     data = line.split()
-                    self.progress.emit(
+                    self.signals.progress.emit(
                         self.item,
-                        [
+                        (
                             (SIZE, data[1]),
                             (PROGRESS, data[2]),
                             (SPEED, data[3]),
                             (ETA, data[4]),
                             (STATUS, "Downloading"),
-                        ],
+                        ),
                     )
+
                 elif line.lower().startswith("error"):
                     error = True
-                    self.progress.emit(
+                    self.signals.progress.emit(
                         self.item,
-                        [
+                        (
                             (SIZE, "ERROR"),
                             (STATUS, "ERROR"),
                             (SPEED, "ERROR"),
-                        ],
+                        ),
                     )
                     break
                 elif line.startswith(("[Merger]", "[ExtractAudio]")):
-                    self.progress.emit(self.item, [(STATUS, "Converting")])
+                    self.signals.progress.emit(
+                        self.item,
+                        ((STATUS, "Converting"),),
+                    )
 
             if not error:
-                self.progress.emit(
+                self.signals.progress.emit(
                     self.item,
-                    [
+                    (
                         (PROGRESS, "100%"),
                         (STATUS, "Finished"),
-                    ],
+                    ),
                 )
 
-        self.finished.emit(self.item.id)
+        self.signals.finished.emit(self.item.id)

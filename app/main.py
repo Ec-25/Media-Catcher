@@ -11,7 +11,7 @@ from gui.ui_app import Ui_MainWindow
 from gui.ui_download import Ui_Download
 from threads import (
     DownloadThread,
-    ItemThread,
+    ItemWorker,
     V_FORMATS,
     V_FORMATS_SUPPORTING_THUMBNAILS,
     A_FORMATS_SUPPORTING_THUMBNAILS,
@@ -112,6 +112,9 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         self.dwld.finished.connect(self.dwld.close)
         self.dwld.finished.connect(self.show)
         self.update_format_video()
+
+        self.threadpool = qtc.QThreadPool()
+        self.threadpool.setMaxThreadCount(1)
 
         self.to_download = {}
         self.threads = {}
@@ -226,7 +229,7 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         self.tw.setItemWidget(item, 3, pb)
         item.id = self.index  # type: ignore
         self.le_url.clear()
-        self.to_download[self.index] = ItemThread(
+        self.to_download[self.index] = ItemWorker(
             item,
             url,
             path,
@@ -255,6 +258,7 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
 
         self.threads = {}
         self.to_download = {}
+        self.index = 0
         self.tw.clear()
 
     def button_download(self):
@@ -265,12 +269,12 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
                 "Unable to download because there are no links in the list.",
             )
 
-        for index, value in self.to_download.items():
-            self.threads[index] = value
-            self.threads[index].finished.connect(self.threads[index].deleteLater)
-            self.threads[index].finished.connect(lambda x: self.threads.pop(x))
-            self.threads[index].progress.connect(self.update_progress)
-            self.threads[index].start()
+        for index, worker in self.to_download.items():
+            self.threads[index] = worker
+            self.threads[index].signals.finished.connect(lambda x: self.threads.pop(x))
+            self.threads[index].signals.progress.connect(self.update_progress)
+
+            self.threadpool.start(self.threads[index])
 
         self.to_download = {}
 
