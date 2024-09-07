@@ -9,7 +9,13 @@ from PySide6 import QtCore as qtc, QtWidgets as qtw
 
 from gui.ui_app import Ui_MainWindow
 from gui.ui_download import Ui_Download
-from threads import DownloadThread, ItemThread
+from threads import (
+    DownloadThread,
+    ItemThread,
+    V_FORMATS,
+    V_FORMATS_SUPPORTING_THUMBNAILS,
+    A_FORMATS_SUPPORTING_THUMBNAILS,
+)
 
 
 class DownloadWindow(qtw.QWidget, Ui_Download):
@@ -105,6 +111,7 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         self.dwld = DownloadWindow()
         self.dwld.finished.connect(self.dwld.close)
         self.dwld.finished.connect(self.show)
+        self.update_format_video()
 
         self.to_download = {}
         self.threads = {}
@@ -113,6 +120,8 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         self.tb_filename.clicked.connect(self.reset_filename)
         self.tb_path.clicked.connect(self.select_path)
         self.ob_type.currentTextChanged.connect(self.update_type_media)
+        self.ob_fvideo.currentTextChanged.connect(self.update_format_video)
+        self.ob_faudio.currentTextChanged.connect(self.update_format_audio)
         self.pb_add.clicked.connect(self.button_add)
         self.tw.itemClicked.connect(self.remove_item)
         self.pb_clear.clicked.connect(self.button_clear)
@@ -134,6 +143,7 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
 
     def update_type_media(self):
         if self.ob_type.currentText() == "Video":
+            self.update_format_video()
             self.ob_qvideo.setEnabled(True)
             self.ob_fvideo.setEnabled(True)
             self.cb_subtitles.setEnabled(True)
@@ -141,8 +151,34 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         elif self.ob_type.currentText() == "Audio":
             self.ob_qvideo.setEnabled(False)
             self.ob_fvideo.setEnabled(False)
+            self.ob_faudio.setEnabled(True)
             self.cb_subtitles.setChecked(False)
             self.cb_subtitles.setEnabled(False)
+
+            if self.ob_faudio.currentText().lower() in A_FORMATS_SUPPORTING_THUMBNAILS:
+                self.cb_thumbnail.setEnabled(True)
+            else:
+                self.cb_thumbnail.setChecked(False)
+                self.cb_thumbnail.setEnabled(False)
+
+    def update_format_video(self):
+        current_fvideo = self.ob_fvideo.currentText().lower()
+        self.ob_faudio.setCurrentText(V_FORMATS[current_fvideo]["audio"])
+        self.ob_faudio.setEnabled(False)
+
+        if current_fvideo in V_FORMATS_SUPPORTING_THUMBNAILS:
+            self.cb_thumbnail.setEnabled(True)
+        else:
+            self.cb_thumbnail.setChecked(False)
+            self.cb_thumbnail.setEnabled(False)
+
+    def update_format_audio(self):
+        if self.ob_type.currentText() == "Audio":
+            if self.ob_faudio.currentText().lower() in A_FORMATS_SUPPORTING_THUMBNAILS:
+                self.cb_thumbnail.setEnabled(True)
+            else:
+                self.cb_thumbnail.setChecked(False)
+                self.cb_thumbnail.setEnabled(False)
 
     def remove_item(self, item, column):
         ret = qtw.QMessageBox.question(

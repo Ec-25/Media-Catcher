@@ -18,6 +18,30 @@ STATUS = 4
 SPEED = 5
 ETA = 6
 
+V_FORMATS = {
+    "mp4": {"video_codec": "h264", "audio": "aac"},
+    "webm": {"video_codec": "vp9", "audio": "opus"},
+    "mkv": {"video_codec": "h264", "audio": "aac"},
+    "avi": {"video_codec": "mpeg4", "audio": "mp3"},
+    "flv": {"video_codec": "flv1", "audio": "mp3"},
+    "mov": {"video_codec": "h264", "audio": "aac"},
+}
+
+V_FORMATS_SUPPORTING_THUMBNAILS = ["mp4", "mkv", "mov"]
+
+A_FORMATS = {
+    "mp3": {"codec": "mp3", "max_bitrate_kbps": 320},
+    "aac": {"codec": "aac", "max_bitrate_kbps": 512},
+    "opus": {"codec": "opus", "max_bitrate_kbps": 510},
+    "flac": {"codec": "flac", "max_bitrate_kbps": "lossless"},
+    "m4a": {"codec": "aac", "max_bitrate_kbps": 512},
+    "wav": {"codec": "pcm_s16le", "max_bitrate_kbps": "lossless"},
+    "ogg": {"codec": "vorbis", "max_bitrate_kbps": 500},
+    "webm": {"codec": "opus", "max_bitrate_kbps": 510},
+}
+
+A_FORMATS_SUPPORTING_THUMBNAILS = ["mp3", "aac", "flac", "m4a"]
+
 
 class DownloadThread(qtc.QThread):
     progress = qtc.Signal(int, str)
@@ -140,42 +164,33 @@ class ItemThread(qtc.QThread):
         ]
 
         if self.type == "Video":
-            if self.qvideo:
-                try:
-                    int(self.qvideo[:-1])
-                    args.extend(
-                        ["-f", f"bestvideo[height<={self.qvideo[:-1]}]+bestaudio/best"]
-                    )
-                except ValueError:
-                    if self.qvideo.lower() == "best":
-                        args.extend(["-f", "bestvideo+bestaudio/best"])
-                    elif self.qvideo.lower() == "worst":
-                        args.extend(["-f", "worstvideo+worstaudio/worst"])
-                    else:
-                        raise ValueError(f"Valor no válido para qvideo: {self.qvideo}")
+            if self.qvideo == "Best":
+                args.extend(["-f", "bestvideo+bestaudio/best"])
 
-            if self.fvideo:
-                args.extend(["--merge-output-format", self.fvideo])
+            elif self.qvideo == "Worst":
+                args.extend(["-f", "worstvideo+worstaudio/worst"])
 
-            if self.subtitles:
-                args.extend(["--write-sub", "--sub-lang", ",".join(self.sublangs)])
+            else:
+                args.extend(
+                    ["-f", f"bv*[height<={self.qvideo[:-1]}]+ba/b[height<={self.qvideo[:-1]}]"]
+                )
+
+            args.extend(["--recode-video", self.fvideo])
 
         elif self.type == "Audio":
-            if self.qaudio:
-                try:
-                    int(self.qaudio[:-1])
-                    args.extend(["-f", f"bestaudio[abr<={self.qaudio[:-1]}]"])
-                except ValueError:
-                    if self.qaudio.lower() == "best":
-                        args.extend(["-f", "bestaudio"])
-                    elif self.qaudio.lower() == "worst":
-                        args.extend(["-f", "worstaudio"])
-                    else:
-                        raise ValueError(f"Valor no válido para qaudio: {self.qaudio}")
+            if self.qaudio == "Best":
+                args.extend(["-f", "bestaudio"])
 
-            if self.faudio:
-                args.extend(["--audio-format", self.faudio])
-            args.extend(["--extract-audio"])
+            elif self.qaudio == "Worst":
+                args.extend(["-f", "worstaudio"])
+
+            else:
+                args.extend(["-f", "bestaudio", "--audio-quality", self.qaudio])
+
+            args.extend(["--extract-audio", "--audio-format", self.faudio])
+
+        if self.subtitles:
+            args.extend(["--write-sub", "--sub-lang", ",".join(self.sublangs)])
 
         if self.thumbnail:
             args.append("--embed-thumbnail")
@@ -205,7 +220,6 @@ class ItemThread(qtc.QThread):
             creationflags=create_window,
         ) as proc:
             for line in proc.stdout:  # type: ignore
-                print(line)
                 with qtc.QMutexLocker(self.mutex):
                     if self._stop:
                         proc.terminate()

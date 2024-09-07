@@ -321,11 +321,6 @@
         <widget class="QComboBox" name="ob_fvideo">
          <item>
           <property name="text">
-           <string>m4v</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
            <string>mp4</string>
           </property>
          </item>
@@ -336,18 +331,33 @@
          </item>
          <item>
           <property name="text">
+           <string>webm</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>flv</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>mkv</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>mka</string>
+           <string>avi</string>
           </property>
          </item>
         </widget>
        </item>
        <item row="2" column="3">
         <widget class="QComboBox" name="ob_faudio">
+         <item>
+          <property name="text">
+           <string>aac</string>
+          </property>
+         </item>
          <item>
           <property name="text">
            <string>m4a</string>
@@ -360,12 +370,22 @@
          </item>
          <item>
           <property name="text">
+           <string>ogg</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>opus</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>flac</string>
+           <string>webm</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>wav</string>
           </property>
          </item>
         </widget>
