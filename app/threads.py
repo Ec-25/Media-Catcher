@@ -10,13 +10,8 @@ from tqdm import tqdm
 
 import PySide6.QtCore as qtc
 
-TITLE = 0
-FORMAT = 1
-SIZE = 2
-PROGRESS = 3
-STATUS = 4
-SPEED = 5
-ETA = 6
+# Constants for readability and maintainability
+TITLE, FORMAT, SIZE, PROGRESS, STATUS, SPEED, ETA = range(7)
 
 V_FORMATS = {
     "mp4": {"video_codec": "h264", "audio": "aac"},
@@ -49,19 +44,14 @@ class DownloadThread(qtc.QThread):
     def __init__(self, url: str, filename: str):
         super().__init__()
         self.url = url
-        self.filename = filename
+        self.filename = filename or path.basename(self.url)
 
     def run(self):
-        if not self.filename:
-            self.filename = path.basename(self.url)
-
         request = requests.get(self.url, stream=True)
-
         total_size = int(request.headers.get("content-length", 0))
-        scaling_factor = 100 / total_size
+        scaling_factor = 100 / total_size if total_size > 0 else 1
         block_size = 1024
         data = StringIO()
-        progress = 0
 
         with NamedTemporaryFile(mode="wb", delete=False) as temp_file, tqdm(
             desc=path.basename(self.filename),
@@ -75,63 +65,48 @@ class DownloadThread(qtc.QThread):
         ) as progress_bar:
             for chunk in request.iter_content(chunk_size=block_size):
                 temp_file.write(chunk)
-                progress_bar.update(block_size)
-                progress += block_size
+                progress_bar.update(len(chunk))
                 self.progress.emit(
-                    progress * scaling_factor, data.getvalue().split("\r")[-1].strip()
+                    int(progress_bar.n * scaling_factor),
+                    data.getvalue().split("\r")[-1].strip(),
                 )
 
-            temp_file.flush()
-            temp_file.close()
         shutil.move(temp_file.name, self.filename)
 
 
 class ItemSignal(qtc.QObject):
-    """
-    Defines the signals available from a running worker thread.
-
-    Supported signals are:
-
-        - finished = qtc.Signal(int)
-        - progress = qtc.Signal(object, list)
-    """
+    """Signals available from a running worker thread."""
 
     finished = qtc.Signal(int)
     progress = qtc.Signal(object, tuple)
 
 
 class ItemWorker(qtc.QRunnable):
-    """
-    Worker thread
-
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-    """
-
     def __init__(
         self,
         item,
-        url: str,
-        path: str,
-        filename: str,
-        type: str,
-        subtitles: bool,
-        sublangs: str,
-        qvideo: str,
-        fvideo: str,
-        qaudio: str,
-        faudio: str,
-        metadata: bool,
-        thumbnail: bool,
-        noplaylist: bool,
-    ) -> None:
-        super(ItemWorker, self).__init__()
+        url,
+        path,
+        filename,
+        type_,
+        subtitles,
+        sublangs,
+        qvideo,
+        fvideo,
+        qaudio,
+        faudio,
+        metadata,
+        thumbnail,
+        noplaylist,
+    ):
+        super().__init__()
         self.signals = ItemSignal()
 
         self.item = item
         self.url = url
         self.path = path
         self.filename = filename
-        self.type = type
+        self.type = type_
         self.subtitles = subtitles
         self.sublangs = sublangs
         self.qvideo = qvideo
@@ -145,25 +120,8 @@ class ItemWorker(qtc.QRunnable):
         self.mutex = qtc.QMutex()
         self._stop = False
 
-    def __str__(self) -> str:
-        s = (
-            f"(url={self.url}, "
-            f"path={self.path}, "
-            f"filename={self.filename}, "
-            f"type={self.type}, "
-            f"subtitles={self.subtitles}, "
-            f"sublangs={self.sublangs}, "
-            f"qvideo={self.qvideo}, "
-            f"fvideo={self.fvideo}, "
-            f"qaudio={self.qaudio}, "
-            f"faudio={self.faudio}, "
-            f"metadata={self.metadata}, "
-            f"thumbnail={self.thumbnail}, "
-            f"noplaylist={self.noplaylist})"
-        )
-        return s
-
     def build_command(self):
+        """Build the yt-dlp command."""
         args = [
             "yt-dlp",
             "--newline",
@@ -173,8 +131,7 @@ class ItemWorker(qtc.QRunnable):
             "--no-simulate",
             "--progress",
             "--progress-template",
-            "%(progress.status)s %(progress._total_bytes_estimate_str)s "
-            "%(progress._percent_str)s %(progress._speed_str)s %(progress._eta_str)s",
+            "%(progress.status)s %(progress._total_bytes_estimate_str)s %(progress._percent_str)s %(progress._speed_str)s %(progress._eta_str)s",
             "--dump-json",
             "-v",
             "-o",
@@ -182,44 +139,46 @@ class ItemWorker(qtc.QRunnable):
             self.url,
         ]
 
+        # Video settings
         if self.type == "Video":
-            if self.qvideo == "Best":
-                args.extend(["-f", "bestvideo+bestaudio/best"])
-
-            elif self.qvideo == "Worst":
-                args.extend(["-f", "worstvideo+worstaudio/worst"])
-
-            else:
-                args.extend(
-                    [
-                        "-f",
+            quality_map = {
+                "Best": "bestvideo+bestaudio/best",
+                "Worst": "worstvideo+worstaudio/worst",
+            }
+            args.extend(
+                [
+                    "-f",
+                    quality_map.get(
+                        self.qvideo,
                         f"bv*[height<={self.qvideo[:-1]}]+ba/b[height<={self.qvideo[:-1]}]",
-                    ]
-                )
-
+                    ),
+                ]
+            )
             args.extend(["--recode-video", self.fvideo])
 
+        # Audio settings
         elif self.type == "Audio":
-            if self.qaudio == "Best":
-                args.extend(["-f", "bestaudio"])
-
-            elif self.qaudio == "Worst":
-                args.extend(["-f", "worstaudio"])
-
-            else:
-                args.extend(["-f", "bestaudio", "--audio-quality", self.qaudio])
-
+            args.extend(
+                [
+                    "-f",
+                    (
+                        "bestaudio"
+                        if self.qaudio == "Best"
+                        else "worstaudio" if self.qaudio == "Worst" else "bestaudio"
+                    ),
+                    "--audio-quality",
+                    self.qaudio,
+                ]
+            )
             args.extend(["--extract-audio", "--audio-format", self.faudio])
 
+        # Additional options
         if self.subtitles:
             args.extend(["--write-sub", "--sub-lang", ",".join(self.sublangs)])
-
         if self.thumbnail:
             args.append("--embed-thumbnail")
-
         if self.metadata:
             args.append("--add-metadata")
-
         if self.noplaylist:
             args.append("--no-playlist")
 
@@ -230,13 +189,12 @@ class ItemWorker(qtc.QRunnable):
             self._stop = True
 
     @qtc.Slot()
-    def run(self) -> None:
-        """
-        Initialise the runner function.
-        """
-        create_window = subprocess.CREATE_NO_WINDOW if platform == "win32" else 0
+    def run(self):
+        """Run the yt-dlp process and track progress."""
         command = self.build_command()
+        create_window = subprocess.CREATE_NO_WINDOW if platform == "win32" else 0
         error = False
+
         with subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -259,41 +217,32 @@ class ItemWorker(qtc.QRunnable):
 
                 elif line.lower().startswith("downloading"):
                     data = line.split()
-                    self.signals.progress.emit(
-                        self.item,
-                        (
-                            (SIZE, data[1]),
-                            (PROGRESS, data[2]),
-                            (SPEED, data[3]),
-                            (ETA, data[4]),
-                            (STATUS, "Downloading"),
-                        ),
-                    )
+                    if len(data) >= 5:
+                        self.signals.progress.emit(
+                            self.item,
+                            (
+                                (SIZE, data[1]),
+                                (PROGRESS, data[2]),
+                                (SPEED, data[3]),
+                                (ETA, data[4]),
+                                (STATUS, "Downloading"),
+                            ),
+                        )
 
                 elif line.lower().startswith("error"):
                     error = True
                     self.signals.progress.emit(
                         self.item,
-                        (
-                            (SIZE, "ERROR"),
-                            (STATUS, "ERROR"),
-                            (SPEED, "ERROR"),
-                        ),
+                        ((SIZE, "ERROR"), (STATUS, "ERROR"), (SPEED, "ERROR")),
                     )
                     break
+
                 elif line.startswith(("[Merger]", "[ExtractAudio]")):
-                    self.signals.progress.emit(
-                        self.item,
-                        ((STATUS, "Converting"),),
-                    )
+                    self.signals.progress.emit(self.item, ((STATUS, "Converting"),))
 
             if not error:
                 self.signals.progress.emit(
-                    self.item,
-                    (
-                        (PROGRESS, "100%"),
-                        (STATUS, "Finished"),
-                    ),
+                    self.item, ((PROGRESS, "100%"), (STATUS, "Finished"))
                 )
 
         self.signals.finished.emit(self.item.id)
