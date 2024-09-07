@@ -2,6 +2,9 @@
 
 Media Catcher is a multimedia downloading tool. It allows users to download and manage audio and video files from various sources, supporting different formats and offering customizable download options.
 
+![image](https://github.com/user-attachments/assets/0770f4ee-d37e-45f3-a955-46647729e4f1)
+
+
 ## Features
 
 - **Download Video & Audio**: Supports downloading videos and audio from online sources with ease.
@@ -31,19 +34,24 @@ Media Catcher is a multimedia downloading tool. It allows users to download and 
 - OGG
 - WEBM
 
-## Installation
+## Getting Started
+
+* [`Portable`](#portable) ~ *Windows*
+* [`Manual`](#manual) ~ *Platform independent*
+
+## Portable
+Download the latest portable version from the [releases](https://github.com/Ec-25/Media-Catcher/releases/latest) section. 
+This will download a ZIP file containing the program files.
+
+## Manual
 
 ### Prerequisites
-- Python 3.x
-- [PySide6](https://pypi.org/project/PySide6/)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- [TQDM](https://pypi.org/project/tqdm/)
-- [requests](https://pypi.org/project/requests/)
+You **must** have [Python](https://www.python.org/downloads/) 3.9+ installed.
 
 ### Clone the repository
 ```bash
-git clone https://github.com/yourusername/media-catcher.git
-cd media-catcher
+git clone https://github.com/Ec-25/Media-Catcher
+cd Media-Catcher
 ```
 
 ### Install dependencies
@@ -51,7 +59,7 @@ cd media-catcher
 pip install -r requirements.txt
 ```
 
-## Usage
+### Usage
 
 1. Launch the application:
     ```bash
