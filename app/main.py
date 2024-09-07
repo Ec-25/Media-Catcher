@@ -1,10 +1,9 @@
 import shutil
 import platform
-import stat
-from os import environ, path, makedirs, pathsep, stat as stat_result, chmod
+import stat as st
+from os import environ, path, makedirs, pathsep, stat, chmod
 from sys import argv
 from pathlib import Path
-
 from PySide6 import QtCore as qtc, QtWidgets as qtw
 
 from gui.ui_app import Ui_MainWindow
@@ -26,7 +25,6 @@ class DownloadWindow(qtw.QWidget, Ui_Download):
         self.setupUi(self)
         self.pb.setMaximum(100)
         self.missing = []
-
         self.get_missings()
 
         if self.missing:
@@ -54,17 +52,15 @@ class DownloadWindow(qtw.QWidget, Ui_Download):
             },
         }
 
-        missing_path_env = [
+        missing_exes = [
             exe for exe in ["ffmpeg", "ffprobe", "yt-dlp"] if not shutil.which(exe)
         ]
         os_ = platform.system()
 
-        if missing_path_env:
+        if missing_exes:
             BINARIES = ROOT / "bin"
-            if not path.exists(BINARIES):
-                makedirs(BINARIES)
-
-            for exe in missing_path_env:
+            makedirs(BINARIES, exist_ok=True)
+            for exe in missing_exes:
                 if exe == "yt-dlp":
                     url = f"https://github.com/yt-dlp/yt-dlp/releases/latest/download/{binaries[os_][exe]}"
 
@@ -72,7 +68,7 @@ class DownloadWindow(qtw.QWidget, Ui_Download):
                     url = f"https://github.com/imageio/imageio-binaries/raw/master/ffmpeg/{binaries[os_][exe]}"
 
                 filename = path.join(
-                    BINARIES, f"{exe}.exe" if os_ == "Windows" else f"{exe}"
+                    BINARIES, f"{exe}.exe" if os_ == "Windows" else exe
                 )
                 self.missing.append((url, filename))
 
@@ -90,9 +86,7 @@ class DownloadWindow(qtw.QWidget, Ui_Download):
 
     def download_finished(self):
         url, filename = self.missing.pop(0)
-        st = stat_result(filename)
-        chmod(filename, st.st_mode | stat.S_IEXEC)
-
+        chmod(filename, stat(filename).st_mode | st.S_IEXEC)
         if self.missing:
             self.start_download()
         else:
@@ -103,14 +97,16 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.dwld = DownloadWindow()
+        self.dwld.finished.connect(self.dwld.close)
+        self.dwld.finished.connect(self.show)
+        self.initialize_ui()
+
+    def initialize_ui(self):
         self.tw.setColumnWidth(0, 200)
         self.le_url.setFocus()
         self.le_path.setText(path.expanduser("~\\Downloads"))
         self.statusBar.showMessage("Version 0.1 | by @Ec-25")
-
-        self.dwld = DownloadWindow()
-        self.dwld.finished.connect(self.dwld.close)
-        self.dwld.finished.connect(self.show)
         self.update_format_video()
 
         self.threadpool = qtc.QThreadPool()
@@ -131,18 +127,12 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         self.pb_download.clicked.connect(self.button_download)
 
     def reset_filename(self):
-        self.le_filename.setText("")
+        self.le_filename.clear()
 
     def select_path(self):
-        file_dialog = qtw.QFileDialog()
-        file_dialog.setFileMode(qtw.QFileDialog.FileMode.Directory)
-        file_dialog.setOption(qtw.QFileDialog.Option.ShowDirsOnly)
-        file_dialog.exec()
-        self.le_path.setText(
-            file_dialog.selectedFiles()[0]
-            if len(file_dialog.selectedFiles()) > 0
-            else ""
-        )
+        path = qtw.QFileDialog.getExistingDirectory(self, "Select Download Folder")
+        if path:
+            self.le_path.setText(path)
 
     def update_type_media(self):
         if self.ob_type.currentText() == "Video":
@@ -155,6 +145,7 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
             self.ob_qvideo.setEnabled(False)
             self.ob_fvideo.setEnabled(False)
             self.ob_faudio.setEnabled(True)
+            self.ob_qaudio.setEnabled(True)
             self.cb_subtitles.setChecked(False)
             self.cb_subtitles.setEnabled(False)
 
@@ -168,6 +159,8 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         current_fvideo = self.ob_fvideo.currentText().lower()
         self.ob_faudio.setCurrentText(V_FORMATS[current_fvideo]["audio"])
         self.ob_faudio.setEnabled(False)
+        self.ob_qaudio.setCurrentIndex(0)
+        self.ob_qaudio.setEnabled(False)
 
         if current_fvideo in V_FORMATS_SUPPORTING_THUMBNAILS:
             self.cb_thumbnail.setEnabled(True)
@@ -184,18 +177,22 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
                 self.cb_thumbnail.setEnabled(False)
 
     def remove_item(self, item, column):
-        ret = qtw.QMessageBox.question(
-            self,
-            "Application Message",
-            f"Would you like to remove {item.text(0)} ?",
-            qtw.QMessageBox.StandardButton.Yes | qtw.QMessageBox.StandardButton.No,
-            qtw.QMessageBox.StandardButton.No,
-        )
-        if ret == qtw.QMessageBox.StandardButton.Yes:
-            if self.to_download.get(item.id):
-                self.to_download.pop(item.id)
-            elif threads := self.threads.get(item.id):
-                threads.stop()
+        if (
+            qtw.QMessageBox.question(
+                self,
+                "Application Message",
+                f"Would you like to remove {item.text(0)} ?",
+                qtw.QMessageBox.StandardButton.Yes | qtw.QMessageBox.StandardButton.No,
+                qtw.QMessageBox.StandardButton.No,
+            )
+            == qtw.QMessageBox.StandardButton.Yes
+        ):
+            self.to_download.pop(item.id, None)
+            (
+                self.threads.pop(item.id, None).stop()
+                if self.threads.get(item.id)
+                else None
+            )
             self.tw.takeTopLevelItem(self.tw.indexOfTopLevelItem(item))
 
     def button_add(self):
@@ -256,10 +253,10 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
                 "Remove a download by clicking on it.",
             )
 
-        self.threads = {}
-        self.to_download = {}
-        self.index = 0
         self.tw.clear()
+        self.threads.clear()
+        self.to_download.clear()
+        self.index = 0
 
     def button_download(self):
         if not self.to_download:
@@ -269,24 +266,20 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
                 "Unable to download because there are no links in the list.",
             )
 
-        for index, worker in self.to_download.items():
-            self.threads[index] = worker
-            self.threads[index].signals.finished.connect(lambda x: self.threads.pop(x))
-            self.threads[index].signals.progress.connect(self.update_progress)
-
-            self.threadpool.start(self.threads[index])
-
-        self.to_download = {}
+        for idx, worker in self.to_download.items():
+            self.threads[idx] = worker
+            self.threads[idx].signals.finished.connect(lambda x: self.threads.pop(x))
+            self.threads[idx].signals.progress.connect(self.update_progress)
+            self.threadpool.start(self.threads[idx])
+        self.to_download.clear()
 
     def update_progress(self, item, emit_data):
         try:
-            for data in emit_data:
-                index, update = data
-                if index != 3:
-                    item.setText(index, update)
+            for idx, update in emit_data:
+                if idx != 3:
+                    item.setText(idx, update)
                 else:
-                    pb = self.tw.itemWidget(item, index)
-                    pb.setValue(round(float(update.replace("%", ""))))  # type: ignore
+                    self.tw.itemWidget(item, idx).setValue(round(float(update.replace("%", ""))))  # type: ignore
         except AttributeError:
             return qtw.QMessageBox.information(
                 self,
@@ -298,7 +291,8 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
 if __name__ == "__main__":
     ROOT = Path(__file__).parent
     environ["PATH"] += pathsep + str(ROOT / "bin")
-    # Start the application
+
     app = qtw.QApplication(argv)
     window = MainWindow()
-    app.exit(app.exec())
+    window.show()
+    app.exec()
