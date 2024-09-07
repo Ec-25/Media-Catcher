@@ -18,10 +18,15 @@ from threads import (
 
 
 class DownloadWindow(qtw.QWidget, Ui_Download):
+    """
+    Class responsible for downloading and reporting missing binaries.
+    """
     finished = qtc.Signal()
 
     def __init__(self):
         super().__init__()
+        self.ROOT = Path(__file__).parent
+        environ["PATH"] += pathsep + str(self.ROOT / "bin")
         self.setupUi(self)
         self.pb.setMaximum(100)
         self.missing = []
@@ -58,7 +63,7 @@ class DownloadWindow(qtw.QWidget, Ui_Download):
         os_ = platform.system()
 
         if missing_exes:
-            BINARIES = ROOT / "bin"
+            BINARIES = self.ROOT / "bin"
             makedirs(BINARIES, exist_ok=True)
             for exe in missing_exes:
                 if exe == "yt-dlp":
@@ -94,6 +99,9 @@ class DownloadWindow(qtw.QWidget, Ui_Download):
 
 
 class MainWindow(qtw.QMainWindow, Ui_MainWindow):
+    """
+    Main window of the application.
+    """
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -289,10 +297,6 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
 
 
 if __name__ == "__main__":
-    ROOT = Path(__file__).parent
-    environ["PATH"] += pathsep + str(ROOT / "bin")
-
     app = qtw.QApplication(argv)
     window = MainWindow()
-    window.show()
     app.exec()
