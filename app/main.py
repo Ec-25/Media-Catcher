@@ -106,7 +106,7 @@ class MainWindow(qtw.QMainWindow, Ui_MainWindow):
         self.tw.setColumnWidth(0, 200)
         self.le_url.setFocus()
         self.le_path.setText(path.expanduser("~\\Downloads"))
-        self.statusBar.showMessage("Version 0.1 | by @Ec-25")
+        self.statusBar.showMessage("Version 1.0 | by @Ec25")
         self.update_format_video()
 
         self.threadpool = qtc.QThreadPool()
