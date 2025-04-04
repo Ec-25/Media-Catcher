@@ -1,0 +1,9 @@
+# paths
+__pycache__/
+.vscode/
+bin/
+env/
+output/
+
+# files
+app/main.cfg
