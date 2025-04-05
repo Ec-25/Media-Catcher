@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-# Form generated from reading UI file 'maingqOCMk.ui'
+# Form generated from reading UI file 'mainqrlYaT.ui'
 ##
 # Created by: Qt User Interface Compiler version 6.9.0
 ##
@@ -16,9 +16,10 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
                            QIcon, QImage, QKeySequence, QLinearGradient,
                            QPainter, QPalette, QPixmap, QRadialGradient,
                            QTransform)
-from PySide6.QtWidgets import (QApplication, QGridLayout, QHeaderView, QLineEdit,
-                               QMainWindow, QMenu, QMenuBar, QPushButton,
-                               QSizePolicy, QSpacerItem, QTableView, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QGridLayout, QHeaderView,
+                               QLineEdit, QMainWindow, QMenu, QMenuBar,
+                               QPushButton, QSizePolicy, QSpacerItem, QTableView,
+                               QWidget)
 
 
 class Ui_MainWindow(object):
@@ -52,6 +53,8 @@ class Ui_MainWindow(object):
         self.actionClear_List.setObjectName(u"actionClear_List")
         self.actionSave_History = QAction(MainWindow)
         self.actionSave_History.setObjectName(u"actionSave_History")
+        self.actionDebug = QAction(MainWindow)
+        self.actionDebug.setObjectName(u"actionDebug")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_2 = QGridLayout(self.centralwidget)
@@ -66,12 +69,20 @@ class Ui_MainWindow(object):
         font = QFont()
         font.setPointSize(12)
         self.tableMediaContent.setFont(font)
+        self.tableMediaContent.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.tableMediaContent.setTabKeyNavigation(False)
+        self.tableMediaContent.setDragDropOverwriteMode(False)
+        self.tableMediaContent.setSelectionMode(
+            QAbstractItemView.SelectionMode.NoSelection)
+        self.tableMediaContent.setSortingEnabled(True)
 
         self.gridLayout_2.addWidget(self.tableMediaContent, 2, 0, 1, 2)
 
         self.inputUrl = QLineEdit(self.centralwidget)
         self.inputUrl.setObjectName(u"inputUrl")
         self.inputUrl.setFont(font)
+        self.inputUrl.setClearButtonEnabled(True)
 
         self.gridLayout_2.addWidget(self.inputUrl, 0, 0, 1, 1)
 
@@ -108,6 +119,7 @@ class Ui_MainWindow(object):
         self.menuLanguage.addAction(self.actionEnglish)
         self.menuLanguage.addAction(self.actionSpanish)
         self.menuHelp.addAction(self.actionAbout)
+        self.menuHelp.addAction(self.actionDebug)
 
         self.retranslateUi(MainWindow)
 
@@ -133,6 +145,8 @@ class Ui_MainWindow(object):
             QCoreApplication.translate("MainWindow", u"Clear List", None))
         self.actionSave_History.setText(
             QCoreApplication.translate("MainWindow", u"Save History", None))
+        self.actionDebug.setText(
+            QCoreApplication.translate("MainWindow", u"Debug", None))
         self.inputUrl.setPlaceholderText(QCoreApplication.translate(
             "MainWindow", u"URL of the multimedia content", None))
         self.btnAddUrl.setText(
