@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-# Form generated from reading UI file 'mainqrlYaT.ui'
+# Form generated from reading UI file 'mainbJDvFz.ui'
 ##
 # Created by: Qt User Interface Compiler version 6.9.0
 ##
@@ -43,16 +43,13 @@ class Ui_MainWindow(object):
         self.actionEnglish.setObjectName(u"actionEnglish")
         self.actionEnglish.setCheckable(True)
         self.actionEnglish.setChecked(True)
-        self.actionEspa_ol = QAction(MainWindow)
-        self.actionEspa_ol.setObjectName(u"actionEspa_ol")
-        self.actionEspa_ol.setCheckable(True)
         self.actionSpanish = QAction(MainWindow)
         self.actionSpanish.setObjectName(u"actionSpanish")
         self.actionSpanish.setCheckable(True)
         self.actionClear_List = QAction(MainWindow)
         self.actionClear_List.setObjectName(u"actionClear_List")
-        self.actionSave_History = QAction(MainWindow)
-        self.actionSave_History.setObjectName(u"actionSave_History")
+        self.actionHistory = QAction(MainWindow)
+        self.actionHistory.setObjectName(u"actionHistory")
         self.actionDebug = QAction(MainWindow)
         self.actionDebug.setObjectName(u"actionDebug")
         self.centralwidget = QWidget(MainWindow)
@@ -111,7 +108,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menuFile.addAction(self.actionExit)
         self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionSave_History)
+        self.menuFile.addAction(self.actionHistory)
         self.menuEdit.addAction(self.actionConfiguration)
         self.menuEdit.addAction(self.menuLanguage.menuAction())
         self.menuEdit.addSeparator()
@@ -119,6 +116,7 @@ class Ui_MainWindow(object):
         self.menuLanguage.addAction(self.actionEnglish)
         self.menuLanguage.addAction(self.actionSpanish)
         self.menuHelp.addAction(self.actionAbout)
+        self.menuHelp.addSeparator()
         self.menuHelp.addAction(self.actionDebug)
 
         self.retranslateUi(MainWindow)
@@ -137,14 +135,12 @@ class Ui_MainWindow(object):
             QCoreApplication.translate("MainWindow", u"Configuration", None))
         self.actionEnglish.setText(
             QCoreApplication.translate("MainWindow", u"English", None))
-        self.actionEspa_ol.setText(QCoreApplication.translate(
-            "MainWindow", u"Espa\u00f1ol", None))
         self.actionSpanish.setText(QCoreApplication.translate(
             "MainWindow", u"Espa\u00f1ol", None))
         self.actionClear_List.setText(
             QCoreApplication.translate("MainWindow", u"Clear List", None))
-        self.actionSave_History.setText(
-            QCoreApplication.translate("MainWindow", u"Save History", None))
+        self.actionHistory.setText(
+            QCoreApplication.translate("MainWindow", u"History", None))
         self.actionDebug.setText(
             QCoreApplication.translate("MainWindow", u"Debug", None))
         self.inputUrl.setPlaceholderText(QCoreApplication.translate(
