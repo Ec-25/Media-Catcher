@@ -89,6 +89,9 @@ translations = {
             "deletedHistoryError": "Error al eliminar el historial",
             "limit_rate": "La tasa límite debe ser un (número)(unidad) válido.",
             "proxy": "La URL del proxy debe ser válida.",
+            "no_connection": "No se pudo establecer conexión con el servidor. Por favor, verifica tu conexión a internet e inténtalo de nuevo.",
+            "unknown": "Desconocida"
+
         },
         "elements": {
             "placeHolders": {
@@ -107,7 +110,10 @@ translations = {
             },
             "table_model": {
                 "title": "Título o URL",
+                "type": "Tipo",
+                "quality": "Calidad",
                 "duration": "Duración",
+                "ext": "Extensión",
                 "size": "Tamaño",
                 "downloaded": "Descargado",
                 "speed": "Velocidad",
@@ -211,6 +217,8 @@ translations = {
             "deletedHistoryError": "Error deleting history",
             "limit_rate": "The limit rate must be a valid (number)(unit) valid.",
             "proxy": "The proxy URL must be valid.",
+            "no_connection": "The server could not be connected. Please check your internet connection and try again.",
+            "unknown": "Unknown"
         },
         "elements": {
             "placeHolders": {
@@ -229,7 +237,10 @@ translations = {
             },
             "table_model": {
                 "title": "Title or URL",
+                "type": "Type",
+                "quality": "Quality",
                 "duration": "Duration",
+                "ext": "Extension",
                 "size": "Size",
                 "downloaded": "Downloaded",
                 "speed": "Speed",

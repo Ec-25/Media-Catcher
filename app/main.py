@@ -128,22 +128,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.prepare_table()
 
         # resize the main window
-        w = 1287
-        h = 640
+        w = 1407
+        h = 700
         self.resize(w, h)
 
     def prepare_table(self):
         self.table_model = QStandardItemModel()
-        self.table_model.setColumnCount(7)
+        self.table_model.setColumnCount(10)
 
         self.tableMediaContent.setModel(self.table_model)
         self.tableMediaContent.setColumnWidth(0, 400)  # title
-        self.tableMediaContent.setColumnWidth(1, 100)  # duration
-        self.tableMediaContent.setColumnWidth(2, 100)  # file size
-        self.tableMediaContent.setColumnWidth(3, 400)  # progress bar
-        self.tableMediaContent.setColumnWidth(4, 100)  # speed
-        self.tableMediaContent.setColumnWidth(5, 100)  # time remaining
-        self.tableMediaContent.setColumnWidth(6, 50)  # btn action
+        self.tableMediaContent.setColumnWidth(1, 80)  # type
+        self.tableMediaContent.setColumnWidth(2, 80)  # quality
+        self.tableMediaContent.setColumnWidth(3, 100)  # duration
+        self.tableMediaContent.setColumnWidth(4, 80)  # ext
+        self.tableMediaContent.setColumnWidth(5, 100)  # file size
+        self.tableMediaContent.setColumnWidth(6, 300)  # progress bar
+        self.tableMediaContent.setColumnWidth(7, 100)  # speed
+        self.tableMediaContent.setColumnWidth(8, 80)  # time remaining
+        self.tableMediaContent.setColumnWidth(9, 50)  # btn action
         self.tableMediaContent.setIconSize(QSize(53, 42))
         self.tableMediaContent.horizontalHeader().setVisible(True)
 
@@ -185,7 +188,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def set_table_headers(self):
         self.table_model.setHorizontalHeaderLabels(
-            [self.dictionary["elements"]["table_model"]["title"], self.dictionary["elements"]["table_model"]["duration"], self.dictionary["elements"]["table_model"]["size"], self.dictionary["elements"]["table_model"]["downloaded"], self.dictionary["elements"]["table_model"]["speed"], self.dictionary["elements"]["table_model"]["time_remaining"], self.dictionary["elements"]["table_model"]["action"]])
+            [self.dictionary["elements"]["table_model"]["title"], self.dictionary["elements"]["table_model"]["type"], self.dictionary["elements"]["table_model"]["quality"], self.dictionary["elements"]["table_model"]["duration"], self.dictionary["elements"]["table_model"]["ext"], self.dictionary["elements"]["table_model"]["size"], self.dictionary["elements"]["table_model"]["downloaded"], self.dictionary["elements"]["table_model"]["speed"], self.dictionary["elements"]["table_model"]["time_remaining"], self.dictionary["elements"]["table_model"]["action"]])
 
     def set_language(self, lang):
         # set the language in the application and in the settings
@@ -314,21 +317,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QMessageBox.Yes | QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            self.table_model.clear()
+            total_rows = self.table_model.rowCount()
+            if total_rows == 0:
+                return
 
-            for key in list(self.workers.keys()):
-                worker = self.workers.pop(key)
-                try:
-                    worker.task.cancel()
-                    worker.signals.finished.disconnect()
-                    worker.signals.error.disconnect()
-                    del worker
+            for row in reversed(range(total_rows)):
+                task = self._get_object_data_from_row(row)
+                if not task:
+                    continue
 
-                except Exception as e:
-                    print(f"Error cleaning worker [{key}]:", e)
+                print(f"[{task.url}] Deleting...")
 
-            self.prepare_table()
-            self.set_table_headers()
+                if task.state == "downloading":
+                    task.cancel()
+
+                    worker = self.workers.pop(task.url, None)
+                    if worker:
+                        try:
+                            worker.signals.finished.disconnect()
+                            worker.signals.error.disconnect()
+                            worker.signals.progress.disconnect()
+                        except TypeError:
+                            pass
+
+                        if worker.task.process and worker.task.process.poll() is None:
+                            try:
+                                worker.task.process.terminate()
+                            except Exception as e:
+                                print(
+                                    f"[{task.url}] Error terminating process: {e}")
+
+                self.table_model.removeRow(row)
+
+            print("List cleaned successfully")
 
     def event_actionViewHistory(self):
         """Event for the View History action"""
@@ -361,7 +382,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 with open(log_path, "a", encoding="utf-8") as f:
                     for row in range(self.table_model.rowCount()):
                         progress_widget = self.tableMediaContent.indexWidget(
-                            self.table_model.index(row, 3))
+                            self.table_model.index(row, 6))
 
                         if progress_widget and progress_widget.value() == 100:
                             status = "::sf::"
@@ -370,7 +391,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                             status = f"::si:: {progress_widget.value()} %"
 
                         title = self.table_model.item(row, 0).text()
-                        size = self.table_model.item(row, 2).text()
+                        size = self.table_model.item(row, 5).text()
                         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                         f.write(
@@ -416,7 +437,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         task = self._get_object_data_from_row(row)
         current_worker = self.workers.get(task.url)
         btn = self.tableMediaContent.indexWidget(
-            self.table_model.index(row, 6))
+            self.table_model.index(row, 9))
 
         if not hasattr(task, "retry_count"):
             task.retry_count = 0
@@ -433,9 +454,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 print(f"[{task.url}] Retrying... ({task.retry_count}/3)")
                 # Try again
                 QTimer.singleShot(3000, lambda: self.toggle_download(row))
-            else:
-                print(f"[{task.url}] Failed after 3 attempts.")
+            elif 3 < task.retry_count < 6:
+                print(f"[{task.url}] Failed after {task.retry_count} attempts.")
                 btn.setText("🔁")
+            else:
+                print(f"[{task.url}] Failed after {task.retry_count} attempts.")
+                btn.setText("❌")
 
         def assign_events_to_new_worker(new_worker: DownloadWorker):
             # Connect signals to clean up the worker upon completion
@@ -444,7 +468,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # Connect the signal to update the UI
             new_worker.signals.progress.connect(
-                lambda percent, speed, eta: self.update_progress_ui(task.url, percent, speed, eta))
+                lambda filesize, percent, speed, eta: self.update_progress_ui(task.url, filesize, percent, speed, eta))
 
             return
 
@@ -454,10 +478,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.dictionary["msg"]["download_success"] + f": {task.url}")
             return
 
+        if btn.text() == "❌":
+            self.raise_error(
+                self.dictionary["errors"]["download_error"] + f": {task.url}")
+            return
+
         # If the button is 🔁, we treat it as a retry
         if btn.text() == "🔁":
+            btn.setText("⏳")
             task.state = "idle"  # restart it manually
-            self.toggle_download(row)
+            QTimer.singleShot(1000, lambda: self.toggle_download(row))
             return
 
         if task.state == "paused":
@@ -505,24 +535,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             print(f"[{task.url}] unknown status: {task.state}")
 
-    def update_progress_ui(self, url: str, percent: int, speed: str, eta: str):
+    def update_progress_ui(self, url: str, filesize: str, percent: int, speed: str, eta: str):
         row = self._get_row_from_url(url)
 
         if row == -1:
             print(f"Row not found for URL: {url}")
             return
 
-        # get the progress bar from column 3
+        if filesize:
+            self.table_model.setData(self.table_model.index(row, 5), filesize)
+
+        # get the progress bar from column 6
         progress_bar = self.tableMediaContent.indexWidget(
-            self.table_model.index(row, 3))
+            self.table_model.index(row, 6))
 
         if isinstance(progress_bar, QProgressBar):
             progress_bar.setValue(percent)
         else:
             print("QProgressBar not found in row", row)
 
-        self.table_model.setData(self.table_model.index(row, 4), speed)
-        self.table_model.setData(self.table_model.index(row, 5), eta)
+        self.table_model.setData(self.table_model.index(row, 7), speed)
+        self.table_model.setData(self.table_model.index(row, 8), eta)
 
     def on_table_double_click(self, index):
         """Event for the double click on the table"""
@@ -543,43 +576,54 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # Try canceling if downloading
             if task and task.state == "downloading":
-                print(
-                    f"[{task.url}] Canceling download before deleting row...")
                 task.cancel()
 
-                # You can also terminate the process if it exists
-                worker = self.workers.get(task.url)
-                if worker and task.process:
-                    try:
-                        task.process.terminate()
-                        print(
-                            f"[{task.url}] Process completed successfully")
-                    except Exception as e:
-                        print(
-                            f"[{task.url}] Error terminating the process: {e}")
+            # Remove the worker from the dictionary
+            worker = self.workers.pop(task.url, None)
+            if worker:
+                # Disconnect signals to avoid any stray calls
+                try:
+                    worker.signals.finished.disconnect()
+                    worker.signals.error.disconnect()
+                    worker.signals.progress.disconnect()
+                except TypeError:
+                    # They were already disconnected or not connected yet
+                    pass
 
-                # Remove the worker from the dictionary
-                self.workers.pop(task.url, None)
+                if worker.task.process and worker.task.process.poll() is None:
+                    try:
+                        worker.task.process.terminate()
+                    except Exception as e:
+                        print(f"[{task.url}] Error terminating process: {e}")
 
             # Delete the row from the table
             self.table_model.removeRow(row)
+            print(f"[{task.url}] Row deleted.")
 
     def create_table_item(self, data_object: DownloadTask) -> list[QStandardItem]:
         """Create a table item with the given data"""
         item_title = QStandardItem(data_object.metadata.get("title"))
         item_title.setData(data_object, Qt.UserRole)
-
-        item_duration = QStandardItem(data_object.metadata.get("duration"))
-        item_size = QStandardItem(data_object.metadata.get("filesize"))
+        item_type = QStandardItem(data_object.output_data.get("type"))
+        item_quality = QStandardItem(data_object.output_data.get("quality"))
+        duration = data_object.metadata.get("duration")
+        if not duration:
+            duration = self.dictionary.get("errors").get("unknown")
+        item_duration = QStandardItem(duration)
+        item_ext = QStandardItem(data_object.output_data.get("ext"))
+        filesize = data_object.metadata.get("filesize")
+        if not filesize:
+            filesize = self.dictionary.get("errors").get("unknown")
+        item_size = QStandardItem(filesize)
         item_progress = QStandardItem("")
         item_speed = QStandardItem("")
         item_time = QStandardItem("00:00")
         item_btn_action = QStandardItem("")
 
-        for item in [item_duration, item_size, item_progress, item_speed, item_time]:
+        for item in [item_duration, item_ext, item_size, item_progress, item_speed, item_time]:
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        return [item_title, item_duration, item_size, item_progress, item_speed, item_time, item_btn_action]
+        return [item_title, item_type, item_quality, item_duration, item_ext, item_size, item_progress, item_speed, item_time, item_btn_action]
 
     def add_item_to_table(self, items: list[QStandardItem], progress: QProgressBar) -> None:
         """Add an item to the table"""
@@ -588,7 +632,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Add the progress bar to the table
         self.tableMediaContent.setIndexWidget(
-            self.table_model.index(row, 3), progress)  # Column 3 = progress
+            self.table_model.index(row, 6), progress)  # Column 6 = progress
         # Add thumbnail
         url = self._get_object_data_from_row(row).metadata.get("thumbnail")
         self.load_thumbnail(url, row)
@@ -598,8 +642,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         btn.setFixedSize(50, 30)
         btn.clicked.connect(lambda _, r=row: self.toggle_download(r))
         self.tableMediaContent.setIndexWidget(
-            # Assuming column 6 is the button
-            self.table_model.index(row, 6), btn)
+            # Assuming column 9 is the button
+            self.table_model.index(row, 9), btn)
 
     def load_thumbnail(self, url: str, row: int):
         loader = ThumbnailLoader(url, row)

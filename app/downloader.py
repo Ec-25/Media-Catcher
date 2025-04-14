@@ -309,7 +309,9 @@ class ThumbnailLoader(QThread):
         return QPixmap()  # Empty image if failed
 
     def run(self):
-        pixmap = self.load_pixmap_from_url()
+        pixmap = QPixmap()
+        if self.url:
+            pixmap = self.load_pixmap_from_url()
         self.finished.emit(pixmap, self.row)
 
 
@@ -320,6 +322,13 @@ class DownloadTask:
         self.options = []
         if options:
             self.build_options(options)
+            self.output_data = {
+                "type": "Video" if options.get("type") == "0" else "Audio",
+                "quality": options.get("quality_video") if options.get(
+                    "type") == "0" else options.get("quality_audio"),
+                "ext": options.get("format_video") if options.get(
+                    "type") == "0" else options.get("format_audio")
+            }
         self.process: subprocess.Popen | None = None
         self.state = "idle"  # idle, downloading, paused, completed
         self.metadata: dict = {}  # Dictionary with useful information
@@ -508,31 +517,45 @@ class DownloadTask:
             text=True
         )
 
-        if result.stdout.strip():
+        resultedLines = result.stdout
+        resultedLines = resultedLines.split("\n")
+
+        if len(resultedLines) > 0:
             try:
-                raw = json.loads(result.stdout)
+                raw = json.loads(resultedLines[0])
+                # general
                 self.metadata = {
                     "id": raw.get("id", ""),
-                    "title": raw.get("title", self.url),
+                    "title": self.url,
                     "thumbnail": raw.get("thumbnail", ""),
-                    "description": raw.get("description", ""),
-                    "duration": self.format_duration(raw.get("duration", 0)),
-                    "uploader": raw.get("uploader", "Unknown"),
-                    "categories": raw.get("categories", []),
-                    "tags": raw.get("tags", []),
-                    "upload_date": self.format_date(raw.get("upload_date", "")),
-                    "subtitles": raw.get("automatic_captions"),
-                    "extractor_key": raw.get("extractor_key", ""),
-                    "language": raw.get("language", ""),
-                    "resolution": raw.get("resolution", ""),
-                    "filesize": self.format_filesize(raw.get("filesize_approx", 0)),
-                    "quality": raw.get("format", "").split(" - ")[1] if " - " in raw.get("format", "") else raw.get("format", ""),
-                    "ext": raw.get("ext", "")
+                    "duration": self.format_duration(0),
+                    "filesize": self.format_filesize(0),
                 }
+
+                # validate by title
+                title = raw.get("title")
+                if title:
+                    self.metadata["title"] = title
+                else:
+                    return False, "invalid_url"
+
+                # formatters
+                duration = raw.get("duration")
+                if duration:
+                    self.metadata["duration"] = self.format_duration(
+                        float(duration))
+
+                filesize = raw.get("filesize_approx")
+                if filesize:
+                    self.metadata["filesize"] = self.format_filesize(filesize)
+
                 return True, "valid"
             except Exception as e:
                 print("Error processing JSON:", e)
                 return False, "error"
+
+        elif len(resultedLines) == 0:
+            return False, "no_connection"
 
         err = result.stderr.lower()
         if "not a valid url" in err or "unsupported url" in err:
@@ -543,14 +566,18 @@ class DownloadTask:
             return False, "error"
 
     @staticmethod
-    def format_duration(seconds: int) -> str:
+    def format_duration(seconds: float) -> str:
+        if type(seconds) == str:
+            return seconds
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
         secs = seconds % 60
-        return f"{hours:02}:{minutes:02}:{secs:02}"
+        return f"{int(hours):02}:{int(minutes):02}:{int(secs):02}"
 
     @staticmethod
     def format_filesize(bytes_size: int) -> str:
+        if type(bytes_size) == str:
+            return bytes_size
         mb = bytes_size / (1024 * 1024)
         if mb > 1000:
             gb = mb / 1024
@@ -560,6 +587,9 @@ class DownloadTask:
 
     @staticmethod
     def format_date(date_str: str) -> str:
+        if not date_str:
+            return ""
+
         try:
             if len(date_str) == 6:
                 date_str = "20" + date_str
@@ -573,7 +603,7 @@ class DownloadTask:
 
 
 class DownloadWorkerSignals(QObject):
-    progress = Signal(int, str, str)  # percentage, speed, ETA
+    progress = Signal(str, int, str, str)  # filesize, percentage, speed, ETA
     finished = Signal(str)
     error = Signal(str)
 
@@ -592,32 +622,60 @@ class DownloadWorker(QRunnable):
         print(f"[{self.task.url}] DownloadWorker removed")
 
     def convert_speed(self, speed_str: str) -> str:
-        if not speed_str.endswith("MiB/s"):
-            return speed_str  # It is already formatted or is not valid
+        units = {
+            "GiB/s": 1024 ** 3 * 8,
+            "MiB/s": 1024 ** 2 * 8,
+            "KiB/s": 1024 * 8,
+            "B/s": 8,
+        }
+
+        for unit, multiplier in units.items():
+            if speed_str.endswith(unit):
+                try:
+                    value = float(speed_str.replace(unit, "").strip())
+                    bps = value * multiplier
+                except ValueError:
+                    return speed_str
+
+                if bps >= 1_000_000_000:
+                    return f"{bps / 1_000_000_000:.2f} Gbps"
+                elif bps >= 1_000_000:
+                    return f"{bps / 1_000_000:.2f} Mbps"
+                elif bps >= 1_000:
+                    return f"{bps / 1_000:.2f} Kbps"
+                else:
+                    return f"{bps:.0f} bps"
+
+        return speed_str  # No recognized unit
+
+    def convert_filesize(self, filesize_str: str) -> str:
+        if not filesize_str.endswith(("MiB", "GiB")):
+            return filesize_str  # It is already formatted or is not valid
 
         try:
-            mib = float(speed_str.replace("MiB/s", "").strip())
-            bps = mib * 1024 * 1024 * 8  # Convert MiB/s to bits per second
+            if filesize_str.endswith("GiB"):
+                gb = float(filesize_str.replace("GiB", "").strip())
+                mb = gb * 1024
+            else:
+                mb = float(filesize_str.replace("MiB", "").strip())
         except ValueError:
-            return speed_str
+            return filesize_str
 
-        if bps >= 1_000_000_000:
-            return f"{bps / 1_000_000_000:.2f} Gbps"
-        elif bps >= 1_000_000:
-            return f"{bps / 1_000_000:.2f} Mbps"
-        elif bps >= 1_000:
-            return f"{bps / 1_000:.2f} Kbps"
+        if mb >= 1024:
+            return f"{mb / 1024:.2f} GB"
         else:
-            return f"{bps:.0f} bps"
+            return f"{mb:.2f} MB"
 
     def parse_progress(self, line: str) -> dict | None:
         import re
         match = re.search(
-            r'\[download\]\s+([\d.]+)% of\s+([\d.]+\w+) at\s+([\d.]+\w+/s) ETA (\d+:\d+)', line)
+            r'\[download\]\s+([\d.]+)% of\s+~?\s*([\d.]+\w+) at\s+([\d.]+\w+/s) ETA (\d+:\d+)(?: \(frag \d+/\d+\))?',
+            line
+        )
         if match:
             data = {
                 "progress": round(float(match.group(1))),
-                # "total": match.group(2),
+                "total": self.convert_filesize(match.group(2)),
                 "speed": self.convert_speed(match.group(3)),
                 "eta": match.group(4)
             }
@@ -661,8 +719,12 @@ class DownloadWorker(QRunnable):
                     if line.startswith("[download]"):
                         data = self.parse_progress(line)
                         if data:
-                            self.signals.progress.emit(
-                                data.get("progress"), data.get("speed"), data.get("eta"))
+                            if self.task.metadata.get("filesize") != "0.00 MB":
+                                self.signals.progress.emit(
+                                    "", data.get("progress"), data.get("speed"), data.get("eta"))
+                            else:
+                                self.signals.progress.emit(
+                                    data.get("total"), data.get("progress"), data.get("speed"), data.get("eta"))
 
                 self.task.process.wait()
                 if self.task.is_completed():
