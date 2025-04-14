@@ -3,10 +3,10 @@ from pathlib import Path
 from sys import exit as sys_exit, argv as sys_argv
 from configparser import ConfigParser
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QMessageBox, QProgressBar, QPushButton
+from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QMessageBox, QProgressBar, QPushButton, QSystemTrayIcon, QMenu
 from PySide6.QtCore import Qt, QSize, QTimer, Signal
-from PySide6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon
-from PySide6.QtCore import QThreadPool
+from PySide6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QAction
+from PySide6.QtCore import QCoreApplication, QThreadPool, QEvent
 
 from packages import LoadingDialog, check_dependencies, check_packages, download_missing
 from downloader import ConfigWindow, ThumbnailLoader, DownloadTask, DownloadWorker
@@ -79,9 +79,46 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.thumbnail_threads = []
         self.show()
 
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            if self.isMinimized():
+                self.close_all.emit()
+                self.hide()
+                self.tray_icon.showMessage(
+                    self.dictionary["title"],
+                    self.dictionary["msg"]["background_application"],
+                    QSystemTrayIcon.Information,
+                    3000
+                )
+
+        super().changeEvent(event)
+
     def closeEvent(self, event):
+        if self.table_model.rowCount() != 0:
+            reply = QMessageBox.question(
+                self,
+                self.dictionary["msg"]["exit_title"],
+                self.dictionary["msg"]["exit_text"],
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                event.ignore()
+                return
+
+            self.cancel_downloads()
+            print("List cleaned successfully")
+
         self.close_all.emit()
         event.accept()
+
+    def on_try_exit(self):
+        self.show()
+        QCoreApplication.quit()
+
+    def on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.showNormal()
+            self.activateWindow()
 
     def awaitLoad(self):
         """Load all essential content"""
@@ -131,6 +168,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         w = 1407
         h = 700
         self.resize(w, h)
+
+        # Create the tray icon
+        self.tray_icon = QSystemTrayIcon(
+            QIcon(QIcon.fromTheme(QIcon.ThemeIcon.NetworkWired)), parent=self)
+        self.tray_icon.setToolTip(self.dictionary["title"])
+
+        # Tray menu
+        tray_menu = QMenu()
+        show_action = QAction(self.dictionary["menuActions"]["show"], self)
+        show_action.triggered.connect(self.showNormal)
+        tray_menu.addAction(show_action)
+
+        exit_action = QAction(self.dictionary["menuActions"]["exit"], self)
+        exit_action.triggered.connect(self.on_try_exit)
+        tray_menu.addAction(exit_action)
+
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.setVisible(True)
 
     def prepare_table(self):
         self.table_model = QStandardItemModel()
@@ -200,6 +255,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def connectEvents(self):
         """Connect all senders to their respective events"""
+        self.tray_icon.activated.connect(self.on_tray_activated)
         self.actionDebug.triggered.connect(self.event_debug)
         self.actionEnglish.triggered.connect(lambda: self.set_language("en"))
         self.actionSpanish.triggered.connect(lambda: self.set_language("es"))
@@ -308,6 +364,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.raise_error(self.dictionary["errors"]["extract_info"])
         del self.workers[url]
 
+    def cancel_downloads(self):
+        total_rows = self.table_model.rowCount()
+        if total_rows == 0:
+            return
+
+        for row in reversed(range(total_rows)):
+            task = self._get_object_data_from_row(row)
+            if not task:
+                continue
+
+            print(f"[{task.url}] Deleting...")
+
+            if task.state == "downloading":
+                task.cancel()
+
+                worker = self.workers.pop(task.url, None)
+                if worker:
+                    try:
+                        worker.signals.finished.disconnect()
+                        worker.signals.error.disconnect()
+                        worker.signals.progress.disconnect()
+                    except TypeError:
+                        pass
+
+                    if worker.task.process and worker.task.process.poll() is None:
+                        try:
+                            worker.task.process.terminate()
+                        except Exception as e:
+                            print(
+                                f"[{task.url}] Error terminating process: {e}")
+
+            self.table_model.removeRow(row)
+
     def event_actionClearList(self):
         """Event for the Clear List action"""
         reply = QMessageBox.question(
@@ -317,38 +406,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QMessageBox.Yes | QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            total_rows = self.table_model.rowCount()
-            if total_rows == 0:
-                return
-
-            for row in reversed(range(total_rows)):
-                task = self._get_object_data_from_row(row)
-                if not task:
-                    continue
-
-                print(f"[{task.url}] Deleting...")
-
-                if task.state == "downloading":
-                    task.cancel()
-
-                    worker = self.workers.pop(task.url, None)
-                    if worker:
-                        try:
-                            worker.signals.finished.disconnect()
-                            worker.signals.error.disconnect()
-                            worker.signals.progress.disconnect()
-                        except TypeError:
-                            pass
-
-                        if worker.task.process and worker.task.process.poll() is None:
-                            try:
-                                worker.task.process.terminate()
-                            except Exception as e:
-                                print(
-                                    f"[{task.url}] Error terminating process: {e}")
-
-                self.table_model.removeRow(row)
-
+            self.cancel_downloads()
             print("List cleaned successfully")
 
     def event_actionViewHistory(self):
@@ -445,6 +503,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         def update_button_success(_):
             task.retry_count = 0  # Restart Attempts
             btn.setText("✅")
+            self.tray_icon.showMessage(
+                self.dictionary["msg"]["download_success"],
+                self.dictionary["msg"]["download_success"] +
+                f". URL: {task.url}",
+                QSystemTrayIcon.Information,
+                2000
+            )
             self.workers.pop(task.url, None)
 
         def update_button_error(_):
@@ -457,9 +522,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             elif 3 < task.retry_count < 6:
                 print(f"[{task.url}] Failed after {task.retry_count} attempts.")
                 btn.setText("🔁")
+                self.tray_icon.showMessage(
+                    self.dictionary["msg"]["download_paused"],
+                    self.dictionary["msg"]["download_paused"] +
+                    f". URL: {task.url}",
+                    QSystemTrayIcon.Warning,
+                    2000
+                )
             else:
                 print(f"[{task.url}] Failed after {task.retry_count} attempts.")
                 btn.setText("❌")
+                self.tray_icon.showMessage(
+                    self.dictionary["errors"]["download_error"],
+                    self.dictionary["errors"]["download_error"] +
+                    f". URL: {task.url}",
+                    QSystemTrayIcon.Critical,
+                    2000
+                )
 
         def assign_events_to_new_worker(new_worker: DownloadWorker):
             # Connect signals to clean up the worker upon completion

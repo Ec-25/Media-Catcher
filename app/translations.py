@@ -2,7 +2,7 @@ from version import __version__
 
 translations = {
     "es": {
-        "title": f"Media Catcher - Inicio - v{__version__}",
+        "title": f"Media Catcher - v{__version__}",
         "menu": {
             "file": "Archivo",
             "edit": "Editar",
@@ -11,6 +11,7 @@ translations = {
         },
         "menuActions": {
             "exit": "Salir",
+            "show": "Mostrar",
             "history": "Historial",
             "configuration": "Configuración",
             "clearList": "Limpiar Lista",
@@ -19,10 +20,11 @@ translations = {
         "msg": {
             "savedHistory": "Historial guardado",
             "download_success": "Descarga completada",
-            # "download_paused": "Descarga pausada",
-            # "download_resumed": "Descarga reanudada",
-            # "download_completed": "Descarga completada",
+            "download_paused": "Descarga pausada",
             "deletedHistory": "Historial eliminado",
+            "exit_title": "¿Seguro que desea salir?",
+            "exit_text": "¿Estás seguro de que quieres salir? Se cancelarán las descargas en curso.",
+            "background_application": "La aplicación continúa ejecutándose en segundo plano."
         },
         "history": {
             "title": "Historial de Media Catcher",
@@ -63,7 +65,7 @@ translations = {
             "select_filePH": "seleccionar ARCHIVO",
             "select_filePBError": "Archivo no válido",
             "limit_rate": "Tasa límite",
-            "limit_ratePH": "Introduzca la tasa límite (en M=MB/s ó K=KB/s)()",
+            "limit_ratePH": "Introduzca la tasa límite (en M=MB/s ó K=KB/s)",
             "limit_ratePBError": "Tasa límite no válida",
             "proxyPH": "Introduzca la URL del proxy",
             "proxyPBError": "URL de proxy no válida",
@@ -129,7 +131,7 @@ translations = {
         }
     },
     "en": {
-        "title": f"Media Catcher - Home - v{__version__}",
+        "title": f"Media Catcher - v{__version__}",
         "menu": {
             "file": "File",
             "edit": "Edit",
@@ -138,6 +140,7 @@ translations = {
         },
         "menuActions": {
             "exit": "Exit",
+            "show": "Show",
             "history": "History",
             "configuration": "Configuration",
             "clearList": "Clear List",
@@ -146,10 +149,11 @@ translations = {
         "msg": {
             "savedHistory": "History saved",
             "download_success": "Download completed",
-            # "download_paused": "Download paused",
-            # "download_resumed": "Download resumed",
-            # "download_completed": "Download completed",
+            "download_paused": "Download paused",
             "deletedHistory": "History deleted",
+            "exit_title": "Are you sure you want to exit?",
+            "exit_text": "Are you sure you want to exit? Downloads in progress will be canceled.",
+            "background_application": "The application continues to run in the background"
 
         },
         "history": {
@@ -191,7 +195,7 @@ translations = {
             "select_filePH": "select FILE",
             "select_filePBError": "Invalid file",
             "limit_rate": "Limit Rate",
-            "limit_ratePH": "Enter the limit rate (in M=MB/s or K=KB/s)(Only number)",
+            "limit_ratePH": "Enter the limit rate (in M=MB/s or K=KB/s)",
             "limit_ratePBError": "Invalid limit rate",
             "proxyPH": "Enter the proxy URL",
             "proxyPBError": "Invalid proxy URL",
