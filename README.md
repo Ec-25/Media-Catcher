@@ -9,6 +9,7 @@ Media Catcher lets you download and manage multimedia content from various websi
 - 🧠 Embed metadata and thumbnails automatically  
 - ⚙️ Multithreaded queue system for fast parallel downloads
 
+![media-catcher-image](https://github.com/user-attachments/assets/1dd08057-1d75-4d8e-b3bc-1408145c26db)
 
 ## Features
 
@@ -53,7 +54,7 @@ Media Catcher uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) under the hood, me
 ## Getting Started
 
 * [`Portable`](#portable) ~ *Windows*
-* [`Manual (Cross-platform)`](#manual-cross-platform) ~ *Cross-platform*
+* [`Manual`](#manual-cross-platform) ~ *Cross-platform*
 
 ## Portable
 Download the latest portable version from the [releases](https://github.com/Ec-25/Media-Catcher/releases/latest) section. 
