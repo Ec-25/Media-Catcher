@@ -126,8 +126,6 @@
     </widget>
     <addaction name="actionConfiguration"/>
     <addaction name="menuLanguage"/>
-    <addaction name="separator"/>
-    <addaction name="actionClear_List"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -137,8 +135,16 @@
     <addaction name="separator"/>
     <addaction name="actionDebug"/>
    </widget>
+   <widget class="QMenu" name="menuDownloads">
+    <property name="title">
+     <string>Downloads</string>
+    </property>
+    <addaction name="actionDownload_All"/>
+    <addaction name="actionClear_List"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuDownloads"/>
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionAbout">
@@ -192,8 +198,16 @@
    </property>
   </action>
   <action name="actionDebug">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Debug</string>
+   </property>
+  </action>
+  <action name="actionDownload_All">
+   <property name="text">
+    <string>Download All</string>
    </property>
   </action>
  </widget>

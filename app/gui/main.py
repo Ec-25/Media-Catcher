@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-# Form generated from reading UI file 'mainbJDvFz.ui'
+# Form generated from reading UI file 'mainxIuplp.ui'
 ##
 # Created by: Qt User Interface Compiler version 6.9.0
 ##
@@ -52,6 +52,9 @@ class Ui_MainWindow(object):
         self.actionHistory.setObjectName(u"actionHistory")
         self.actionDebug = QAction(MainWindow)
         self.actionDebug.setObjectName(u"actionDebug")
+        self.actionDebug.setEnabled(False)
+        self.actionDownload_All = QAction(MainWindow)
+        self.actionDownload_All.setObjectName(u"actionDownload_All")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout_2 = QGridLayout(self.centralwidget)
@@ -101,23 +104,26 @@ class Ui_MainWindow(object):
         self.menuLanguage.setObjectName(u"menuLanguage")
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setObjectName(u"menuHelp")
+        self.menuDownloads = QMenu(self.menubar)
+        self.menuDownloads.setObjectName(u"menuDownloads")
         MainWindow.setMenuBar(self.menubar)
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
+        self.menubar.addAction(self.menuDownloads.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menuFile.addAction(self.actionExit)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionHistory)
         self.menuEdit.addAction(self.actionConfiguration)
         self.menuEdit.addAction(self.menuLanguage.menuAction())
-        self.menuEdit.addSeparator()
-        self.menuEdit.addAction(self.actionClear_List)
         self.menuLanguage.addAction(self.actionEnglish)
         self.menuLanguage.addAction(self.actionSpanish)
         self.menuHelp.addAction(self.actionAbout)
         self.menuHelp.addSeparator()
         self.menuHelp.addAction(self.actionDebug)
+        self.menuDownloads.addAction(self.actionDownload_All)
+        self.menuDownloads.addAction(self.actionClear_List)
 
         self.retranslateUi(MainWindow)
 
@@ -143,6 +149,8 @@ class Ui_MainWindow(object):
             QCoreApplication.translate("MainWindow", u"History", None))
         self.actionDebug.setText(
             QCoreApplication.translate("MainWindow", u"Debug", None))
+        self.actionDownload_All.setText(
+            QCoreApplication.translate("MainWindow", u"Download All", None))
         self.inputUrl.setPlaceholderText(QCoreApplication.translate(
             "MainWindow", u"URL of the multimedia content", None))
         self.btnAddUrl.setText(
@@ -155,4 +163,6 @@ class Ui_MainWindow(object):
             QCoreApplication.translate("MainWindow", u"Language", None))
         self.menuHelp.setTitle(
             QCoreApplication.translate("MainWindow", u"Help", None))
+        self.menuDownloads.setTitle(
+            QCoreApplication.translate("MainWindow", u"Downloads", None))
     # retranslateUi

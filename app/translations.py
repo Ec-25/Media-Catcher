@@ -7,13 +7,15 @@ translations = {
             "file": "Archivo",
             "edit": "Editar",
             "language": "Idioma",
+            "downloads": "Descargas",
             "help": "Ayuda",
         },
         "menuActions": {
             "exit": "Salir",
-            "show": "Mostrar",
+            "switch": "Mostrar/Ocultar",
             "history": "Historial",
             "configuration": "Configuración",
+            "downloadAll": "Descargar Todo",
             "clearList": "Limpiar Lista",
             "about": "Acerca de"
         },
@@ -136,13 +138,15 @@ translations = {
             "file": "File",
             "edit": "Edit",
             "language": "Language",
+            "downloads": "Downloads",
             "help": "Help",
         },
         "menuActions": {
             "exit": "Exit",
-            "show": "Show",
+            "switch": "Show/Hide",
             "history": "History",
             "configuration": "Configuration",
+            "downloadAll": "Download all",
             "clearList": "Clear List",
             "about": "About"
         },

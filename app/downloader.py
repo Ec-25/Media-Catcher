@@ -10,7 +10,7 @@ import os
 import json
 
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
-from PySide6.QtCore import QRunnable, QThread, QObject, Signal, QByteArray
+from PySide6.QtCore import QThreadPool, QRunnable, QThread, QObject, Signal, QByteArray
 from PySide6.QtGui import QPixmap
 
 from gui.config import Ui_Config
@@ -22,12 +22,12 @@ class ConfigWindow(QDialog, Ui_Config):
     save_signal = Signal(dict)
     cancel_signal = Signal()
 
-    def __init__(self, main_window, lang: str, configuration: dict):
-        super().__init__()
+    def __init__(self, parent, lang: str, configuration: dict):
+        super().__init__(parent=parent)
         self.lang = lang
         self.dictionary = translations[self.lang]
         self.setupUi(self)
-        main_window.close_all.connect(self.close)
+        parent.close_all.connect(self.close)
         self.init_language()
         self.configuration = configuration
         self.set_configuration()
@@ -457,7 +457,7 @@ class DownloadTask:
             creationflags=creationflags
         )
         self.state = "downloading"
-        print(f"[{self.url}] started (new process)")
+        print(f"[{self.url}] Started (new process)")
 
     def cancel(self):
         if self.process and self.process.poll() is None:
@@ -716,6 +716,7 @@ class DownloadWorker(QRunnable):
                 self.task.start()
                 for line in self.task.process.stdout:
                     line = line.strip()
+
                     if line.startswith("[download]"):
                         data = self.parse_progress(line)
                         if data:
@@ -727,9 +728,12 @@ class DownloadWorker(QRunnable):
                                     data.get("total"), data.get("progress"), data.get("speed"), data.get("eta"))
 
                 self.task.process.wait()
+
                 if self.task.is_completed():
+                    print(f"[{self.task.url}] Download Task Completed")
                     self.task.state = "completed"
                     self.signals.finished.emit(self.task.url)
+
                 else:
                     if self.task.state in ("paused", "cancelled"):
                         print(
@@ -744,3 +748,35 @@ class DownloadWorker(QRunnable):
 
         except Exception as e:
             self.signals.error.emit(str(e))
+
+
+class DownloadManager:
+    def __init__(self, max_downloads=3):
+        super().__init__()
+        self.max_downloads = max_downloads
+        self.active_downloads = 0
+        self.queue = []
+        self.thread_pool = QThreadPool.globalInstance()
+
+    def add_download(self, worker: DownloadWorker):
+        if self.max_downloads != 0:
+            if self.active_downloads < self.max_downloads:
+                self._start_download(worker)
+            else:
+                self.queue.append(worker)
+        else:
+            self._start_download(worker)
+
+    def _start_download(self, worker):
+        self.active_downloads += 1
+        worker.signals.finished.connect(
+            lambda _: self._on_download_finished(worker))
+        worker.signals.error.connect(
+            lambda _: self._on_download_finished(worker))
+        self.thread_pool.start(worker)
+
+    def _on_download_finished(self, worker):
+        self.active_downloads -= 1
+        if self.queue:
+            next_worker = self.queue.pop(0)
+            self._start_download(next_worker)
