@@ -4,3 +4,9 @@ __pycache__/
 bin/
 env/
 output/
+app/download
+
+# files
+app/main.cfg
+app/history.log
+debug.log
