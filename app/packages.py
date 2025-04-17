@@ -1,4 +1,4 @@
-from os import makedirs, path
+from os import makedirs, path, name as os_name
 from shutil import which
 from platform import system
 import subprocess
@@ -97,11 +97,16 @@ def add_to_path(bin_path: Path) -> None:
     bin_str = str(bin_path)
 
     if system() == "Windows":
+        creationflags = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+            if os_name == "nt" else 0
+        )
         # Add to PATH in Windows (persistently)
         subprocess.run(
             f'setx PATH "%PATH%;{bin_str}"',
             shell=True,
             check=False,
+            creationflags=creationflags
         )
     else:
         # Add to PATH on Linux/macOS (for the current session)
@@ -155,6 +160,13 @@ def download_missing(missing: list[tuple[str, str]], loading_dialog: LoadingDial
         # Add the bin folder to the system PATH
         add_to_path(bin_path)
         return failed
+
+
+def write_debug_log(message):
+    """Write a log message to a file."""
+    log_file = "debug.log"
+    with open(log_file, "a") as f:
+        f.write(str(message) + "\n")
 
 
 _OS = system()

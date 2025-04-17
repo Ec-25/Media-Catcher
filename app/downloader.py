@@ -16,6 +16,7 @@ from PySide6.QtGui import QPixmap
 from gui.config import Ui_Config
 
 from translations import translations
+from packages import write_debug_log
 
 
 class ConfigWindow(QDialog, Ui_Config):
@@ -305,7 +306,9 @@ class ThumbnailLoader(QThread):
                 pixmap.loadFromData(QByteArray(img_data))
                 return pixmap
         except Exception as e:
-            print(f"Error loading image: {e}")
+            msg = f"Error loading image: {e}"
+            print(msg)
+
         return QPixmap()  # Empty image if failed
 
     def run(self):
@@ -316,7 +319,8 @@ class ThumbnailLoader(QThread):
 
 
 class DownloadTask:
-    def __init__(self, url: str, options: dict = None):
+    def __init__(self, url: str, debug: bool = False, options: dict = None):
+        self.debug = debug
         self.url = url
         self.output_template = "%(title)s.%(ext)s"
         self.options = []
@@ -435,7 +439,10 @@ class DownloadTask:
 
     def start(self):
         if self.process is not None and self.process.poll() is None:
-            print(f"[{self.url}] already running")
+            if self.debug:
+                msg = f"[{self.url}] already running"
+                write_debug_log(msg)
+
             return  # It is already running
 
         cmd = [
@@ -446,7 +453,10 @@ class DownloadTask:
             self.url
         ]
 
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+        creationflags = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+            if os.name == "nt" else 0
+        )
 
         self.process = subprocess.Popen(
             cmd,
@@ -457,14 +467,20 @@ class DownloadTask:
             creationflags=creationflags
         )
         self.state = "downloading"
-        print(f"[{self.url}] Started (new process)")
+
+        if self.debug:
+            msg = f"[{self.url}] Started (new process)"
+            write_debug_log(msg)
 
     def cancel(self):
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process = None
             self.state = "cancelled"
-            print(f"[{self.url}] cancelled")
+
+            if self.debug:
+                msg = f"[{self.url}] cancelled"
+                write_debug_log(msg)
 
     def pause(self):
         self.manual_pause = True
@@ -479,19 +495,31 @@ class DownloadTask:
             self.process.wait()  # Wait for the process to close
             self.process = None
             self.state = "paused"
-            print(f"[{self.url}] paused")
+            if self.debug:
+                msg = f"[{self.url}] Paused"
+                write_debug_log(msg)
 
     def resume(self):
         if self.is_running():
-            print(f"[{self.url}] already running, skipping resume")
+            if self.debug:
+                msg = f"[{self.url}] Already running, skipping resume"
+                write_debug_log(msg)
+
             return
         if self.state != "paused":
-            print(f"[{self.url}] not paused, can't resume")
+            if self.debug:
+                msg = f"[{self.url}] Not paused, can't resume"
+                write_debug_log(msg)
+
             return
+
         self.manual_pause = False
         self.state = "downloading"
         self.start()
-        print(f"[{self.url}] resumed")
+
+        if self.debug:
+            msg = f"[{self.url}] Resumed"
+            write_debug_log(msg)
 
     def is_running(self) -> bool:
         return self.process and self.process.poll() is None
@@ -510,11 +538,17 @@ class DownloadTask:
         if not parsed.scheme in ("http", "https") and bool(parsed.netloc):
             return False, "invalid_url"
 
+        creationflags = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+            if os.name == "nt" else 0
+        )
+
         result = subprocess.run(
             ["yt-dlp", "--skip-download", "--quiet",
                 "--no-warnings", "--dump-json", *self.options, self.url],
             capture_output=True,
-            text=True
+            text=True,
+            creationflags=creationflags
         )
 
         resultedLines = result.stdout
@@ -551,7 +585,11 @@ class DownloadTask:
 
                 return True, "valid"
             except Exception as e:
-                print("Error processing JSON:", e)
+                if self.debug:
+                    msg = f"Error processing JSON: {e}"
+                    write_debug_log(msg)
+                    print(msg)
+
                 return False, "error"
 
         elif len(resultedLines) == 0:
@@ -609,19 +647,23 @@ class DownloadWorkerSignals(QObject):
 
 
 class DownloadWorker(QRunnable):
-    def __init__(self, mode: str, task: DownloadTask):
+    def __init__(self, mode: str, task: DownloadTask, debug: bool = False):
         """
         mode: "build" | "download | resume | paused"
         """
         super().__init__()
+        self.debug = debug
         self.mode = mode
         self.task = task
         self.signals = DownloadWorkerSignals()
 
     def __del__(self):
-        print(f"[{self.task.url}] DownloadWorker removed")
+        if self.debug:
+            msg = f"[{self.task.url}] DownloadWorker removed"
+            write_debug_log(msg)
 
-    def convert_speed(self, speed_str: str) -> str:
+    @staticmethod
+    def convert_speed(speed_str: str) -> str:
         units = {
             "GiB/s": 1024 ** 3 * 8,
             "MiB/s": 1024 ** 2 * 8,
@@ -648,7 +690,8 @@ class DownloadWorker(QRunnable):
 
         return speed_str  # No recognized unit
 
-    def convert_filesize(self, filesize_str: str) -> str:
+    @staticmethod
+    def convert_filesize(filesize_str: str) -> str:
         if not filesize_str.endswith(("MiB", "GiB")):
             return filesize_str  # It is already formatted or is not valid
 
@@ -686,12 +729,16 @@ class DownloadWorker(QRunnable):
         def retry_download(max_retries=3, delay=3):
             for attempt in range(1, max_retries + 1):
                 if self.task.state in ("paused", "cancelled"):
-                    print(
-                        f"[{self.task.url}] Stopped manually, no retries")
+                    if self.debug:
+                        msg = f"[{self.task.url}] Stopped manually, no retries"
+                        write_debug_log(msg)
+
                     return
 
-                print(
-                    f"[{self.task.url}] Retrying... ({attempt}/{max_retries})")
+                if self.debug:
+                    msg = f"[{self.task.url}] Retrying... ({attempt}/{max_retries})"
+                    write_debug_log(msg)
+
                 self.task.start()
                 self.task.process.wait()
 
@@ -730,14 +777,19 @@ class DownloadWorker(QRunnable):
                 self.task.process.wait()
 
                 if self.task.is_completed():
-                    print(f"[{self.task.url}] Download Task Completed")
+                    if self.debug:
+                        msg = f"[{self.task.url}] Download Task Completed"
+                        write_debug_log(msg)
+
                     self.task.state = "completed"
                     self.signals.finished.emit(self.task.url)
 
                 else:
                     if self.task.state in ("paused", "cancelled"):
-                        print(
-                            f"[{self.task.url}] Stopped manually, no retries")
+                        if self.debug:
+                            msg = f"[{self.task.url}] Stopped manually, no retries"
+                            write_debug_log(msg)
+
                         return
                     if not self.task.manual_pause:
                         retry_download()

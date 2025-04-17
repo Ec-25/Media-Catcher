@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(480, 640)
         MainWindow.setMinimumSize(QSize(480, 640))
-        icon = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.NetworkWired))
+        icon = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaOptical))
         MainWindow.setWindowIcon(icon)
         MainWindow.setLocale(QLocale(QLocale.English, QLocale.UnitedStates))
         self.actionAbout = QAction(MainWindow)

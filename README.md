@@ -1,6 +1,13 @@
 # Media Catcher - Version 2.0
+*A fast, powerful, and customizable tool for downloading videos and audio from the web.*
 
-Media Catcher is a multimedia downloading tool. It allows users to download and manage audio and video files from various sources, supporting different formats and offering customizable download options.
+Media Catcher lets you download and manage multimedia content from various websites with ease:
+
+- 🎥 Download video & audio from online sources  
+- 📁 Convert to multiple formats (MP4, MP3, FLAC...)  
+- 💬 Download subtitles  
+- 🧠 Embed metadata and thumbnails automatically  
+- ⚙️ Multithreaded queue system for fast parallel downloads
 
 
 ## Features
@@ -34,16 +41,25 @@ Media Catcher is a multimedia downloading tool. It allows users to download and 
 - WAV
 - WEBM
 
+## Supported Sites
+
+Media Catcher uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) under the hood, meaning it supports hundreds of websites.
+
+🔗 **Full list of supported sites:**  
+👉 [https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)  
+> **ℹ️ Note:** yt-dlp is actively maintained and regularly updates its supported sites list and internal features.  
+> To ensure continued compatibility, keep yt-dlp updated to its latest version.
+
 ## Getting Started
 
 * [`Portable`](#portable) ~ *Windows*
-* [`Manual`](#manual) ~ *Platform independent*
+* [`Manual (Cross-platform)`](#manual-cross-platform) ~ *Cross-platform*
 
 ## Portable
 Download the latest portable version from the [releases](https://github.com/Ec-25/Media-Catcher/releases/latest) section. 
 This will download a ZIP file containing the program files.
 
-## Manual
+## Manual (Cross-platform)
 
 ### Prerequisites
 You **must** have [Python](https://www.python.org/downloads/) 3.9+ installed.

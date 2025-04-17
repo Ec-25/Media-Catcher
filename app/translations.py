@@ -104,6 +104,7 @@ translations = {
                     "status": "Estado",
                     "status_finished": "Finalizado",
                     "status_interrupted": "Interrumpido al",
+                    "status_not_initialized": "No iniciado",
                     "title": "Título o URL",
                     "size": "Tamaño",
                     "date": "Fecha"
@@ -235,6 +236,7 @@ translations = {
                     "status": "Status",
                     "status_finished": "Finished",
                     "status_interrupted": "Interrupted at",
+                    "status_not_initialized": "Not initialized",
                     "title": "Title or URL",
                     "size": "Size",
                     "date": "Date"

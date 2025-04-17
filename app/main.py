@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QSize, QTimer, Signal
 from PySide6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QAction
 from PySide6.QtCore import QCoreApplication, QEvent
 
-from packages import LoadingDialog, check_dependencies, check_packages, download_missing
+from packages import LoadingDialog, check_dependencies, check_packages, download_missing, write_debug_log
 from downloader import ConfigWindow, DownloadManager, ThumbnailLoader, DownloadTask, DownloadWorker
 
 from gui.main import Ui_MainWindow
@@ -102,7 +102,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
 
             self.cancel_downloads()
-            print("List cleaned successfully")
+
+            if self.debug:
+                msg = "List cleaned successfully"
+                write_debug_log(msg)
+
+        if self.debug:
+            write_debug_log("Closing application")
 
         self.close_all.emit()
         event.accept()
@@ -130,6 +136,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # set language
         self.lang = get_config_value("general", "lang", "en")
         self.dictionary = translations[self.lang]
+
+        # set debug
+        self.debug = get_config_value("general", "debug", "False") == "True"
+        self.actionDebug.setVisible(self.debug)
+        self.actionDebug.setEnabled(self.debug)
 
         # Show the loading window
         self.loading_dialog = LoadingDialog(self.lang)
@@ -180,7 +191,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Create the tray icon
         self.tray_icon = QSystemTrayIcon(
-            QIcon(QIcon.fromTheme(QIcon.ThemeIcon.NetworkWired)), parent=self)
+            QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaOptical)), parent=self)
         self.tray_icon.setToolTip(self.dictionary["title"])
 
         # Tray menu
@@ -206,7 +217,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             max_downloads = "0"
         self.download_manager = DownloadManager(int(max_downloads))
         self.load_manager = DownloadManager(int(max_downloads))
-        self.workers = {}  # clave: url, valor: DownloadWorker
+        self.workers = {}  # key: url, value: DownloadWorker
         self.progress_callbacks = {}
         self.thumbnail_threads = []
 
@@ -359,7 +370,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.init_language()
 
     def event_debug(self):
-        print(self.workers)
+        if self.debug:
+            msg = self.workers
+            write_debug_log(msg)
+            print(msg)
 
     def event_actionAbout(self):
         """Event for the About action"""
@@ -426,7 +440,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         if reply == QMessageBox.Yes:
             self.cancel_downloads()
-            print("List cleaned successfully")
+
+            if self.debug:
+                msg = "List cleaned successfully"
+                write_debug_log(msg)
 
     def event_actionViewHistory(self):
         """Event for the View History action"""
@@ -464,8 +481,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         if progress_widget and progress_widget.value() == 100:
                             status = "::sf::"
 
-                        elif progress_widget and progress_widget.value() > 0:
+                        elif progress_widget and progress_widget.value() >= 0:
                             status = f"::si:: {progress_widget.value()} %"
+
+                        else:
+                            status = "::sni::"
 
                         title = self.table_model.item(row, 0).text()
                         size = self.table_model.item(row, 5).text()
@@ -476,6 +496,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 self.raise_message(
                     "info", "Info", self.dictionary["msg"]["savedHistory"])
+
+            self.history_window.close()
 
         def load_history_file():
             log_path = ROOT / "history.log"
@@ -490,6 +512,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 text = text.replace("x:", base.get("status") + ":")
                 text = text.replace("::sf::", base.get("status_finished"))
                 text = text.replace("::si::", base.get("status_interrupted"))
+                text = text.replace(
+                    "::sni::", base.get("status_not_initialized"))
                 text = text.replace("y:", base.get("title") + ":")
                 text = text.replace("z:", base.get("size") + ":")
                 text = text.replace("d:", base.get("date") + ":")
@@ -555,7 +579,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             else:
                 # Error
-                print(f"[{task.url}] unknown status: {task.state}")
+                if self.debug:
+                    msg = f"[{task.url}] unknown status: {task.state}"
+                    write_debug_log(msg)
                 return
 
         elif btn.text() == "⏳":
@@ -586,7 +612,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         else:
             # Error
-            print(f"[{task.url}] unknown status: {task.state}")
+            if self.debug:
+                msg = f"[{task.url}] unknown status: {task.state}"
+                write_debug_log(msg)
             return
 
     # Download Manipulation
@@ -680,8 +708,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         # create object
-        task = DownloadTask(url, conf)
-        worker = DownloadWorker("build", task)
+        task = DownloadTask(url, self.debug, conf)
+        worker = DownloadWorker("build", task, self.debug)
         self.workers[url] = worker
 
         # initialize in ui
@@ -709,7 +737,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             row = _get_row_from_url(url)
 
             if row == -1:
-                print(f"Row not found for URL: {url}")
+                if self.debug:
+                    msg = f"Row not found for URL: {url}"
+                    write_debug_log(msg)
                 return
 
             if filesize:
@@ -723,7 +753,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if isinstance(progress_bar, QProgressBar):
                 progress_bar.setValue(percent)
             else:
-                print("QProgressBar not found in row", row)
+                if self.debug:
+                    msg = f"QProgressBar not found in row: {row}"
+                    write_debug_log(msg)
 
             self.table_model.setData(self.table_model.index(row, 7), speed)
             self.table_model.setData(self.table_model.index(row, 8), eta)
@@ -749,12 +781,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.workers.pop(task.url, None)
             task.retry_count += 1
             if task.retry_count <= 3:
-                print(f"[{task.url}] Retrying... ({task.retry_count}/3)")
+                if self.debug:
+                    msg = f"[{task.url}] Retrying... ({task.retry_count}/3)"
+                    write_debug_log(msg)
+
                 # Try again
                 QTimer.singleShot(
                     3000, lambda: self.event_toggle_download(row))
             elif 3 < task.retry_count < 6:
-                print(f"[{task.url}] Failed after {task.retry_count} attempts.")
+                if self.debug:
+                    msg = f"[{task.url}] Failed after {task.retry_count} attempts."
+                    write_debug_log(msg)
+
                 btn.setText("🔁")
                 if not self.isVisible():
                     self.tray_icon.showMessage(
@@ -765,7 +803,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         2000
                     )
             else:
-                print(f"[{task.url}] Failed after {task.retry_count} attempts.")
+                if self.debug:
+                    msg = f"[{task.url}] Failed after {task.retry_count} attempts."
+                    write_debug_log(msg)
+
                 btn.setText("❌")
                 QTimer.singleShot(500, lambda: (
                     self.table_model.setData(
@@ -796,8 +837,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if type == "run":
             # Start
-            print(f"[{task.url}] Starting Download...")
-            new_worker = DownloadWorker("download", task)
+            if self.debug:
+                msg = f"[{task.url}] Starting Download..."
+                write_debug_log(msg)
+
+            new_worker = DownloadWorker("download", task, self.debug)
             assign_events_to_new_worker(new_worker)
 
             self.workers[task.url] = new_worker
@@ -806,7 +850,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             # Resume
             if task.is_running():
-                print(f"[{task.url}] Skipping new worker, already running")
+                if self.debug:
+                    msg = f"[{task.url}] Skipping new worker, already running"
+                    write_debug_log(msg)
                 return
 
             current_worker = self.workers.pop(task.url, None)
@@ -814,22 +860,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 try:
                     current_worker.task.process.terminate()
                 except Exception as e:
-                    print(
-                        f"[{task.url}] Error terminating old process: {e}")
+                    if self.debug:
+                        msg = f"[{task.url}] Error terminating old process: {e}"
+                        write_debug_log(msg)
+                        print(msg)
 
             del current_worker
 
-            new_worker = DownloadWorker("resume", task)
+            new_worker = DownloadWorker("resume", task, self.debug)
             assign_events_to_new_worker(new_worker)
             self.workers[task.url] = new_worker
             self.download_manager.add_download(new_worker)
 
-            print(f"[{task.url}] resuming download...")
+            if self.debug:
+                msg = f"[{task.url}] resuming download..."
+                write_debug_log(msg)
+
             btn.setText("⏸️")
 
     def pause_download(self, task: DownloadTask, btn):
         if task.process and task.process.poll() is None:
-            print(f"[{task.url}] pausing download...")
+            if self.debug:
+                msg = f"[{task.url}] pausing download..."
+                write_debug_log(msg)
+
             task.pause()
             btn.setText("▶️")
 
@@ -863,12 +917,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 try:
                     worker.task.process.terminate()
                 except Exception as e:
-                    print(f"[{task.url}] Error terminating process: {e}")
+                    if self.debug:
+                        msg = f"[{task.url}] Error terminating process: {e}"
+                        write_debug_log(msg)
+                        print(msg)
 
         # Delete the row from the table
         del worker
         self.table_model.removeRow(row)
-        print(f"[{task.url}] Row deleted")
+
+        if self.debug:
+            msg = f"[{task.url}] Row deleted"
+            write_debug_log(msg)
 
     def cancel_downloads(self):
         total_rows = self.table_model.rowCount()
