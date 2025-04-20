@@ -1,9 +1,10 @@
-from os import makedirs, path, name as os_name
+from os import path, environ, pathsep, makedirs
 from shutil import which
 from platform import system
-import subprocess
-from requests import get as get_request
 from pathlib import Path
+import stat
+import subprocess
+import requests
 
 from PySide6.QtWidgets import QDialog
 from PySide6.QtCore import QCoreApplication
@@ -67,99 +68,142 @@ def check_packages(ROOT: Path) -> list[tuple[str, str]] | None:
     Check if the packages are available on the system or in the bin folder.
 
     Returns:
-    None
+        List of (url, expected_path) tuples for missing executables, or None if all are found.
     """
     packages = ['yt-dlp', 'ffmpeg', 'ffprobe']
     os_ = system()
+    bin_path = ROOT / "bin"
+    missing = []
 
-    missing_exes = [
-        exe for exe in packages if not which(exe)
-    ]
+    for exe in packages:
+        found = which(exe)
 
-    if missing_exes:
-        missing = []
+        # If it is not in the system PATH
+        if not found:
+            # Try searching in ROOT/bin
+            expected_name = exe if os_ != "Windows" else f"{exe}.exe"
+            local_path = bin_path / expected_name
 
-        bin_path = ROOT / "bin"
+            if local_path.exists():
+                # If present, add to PATH
+                add_to_path(bin_path)
+            else:
+                # If not anywhere, mark for download
+                url = DOWNLOAD_PACKAGES_INFO[exe]
+                file_request = bin_path / _REQUIRED_PACKAGES_INFO[os_][exe]
+                missing.append((url, file_request))
 
-        for exe in missing_exes:
-            url = DOWNLOAD_PACKAGES_INFO[exe]
-            filename = path.join(bin_path, _REQUIRED_PACKAGES_INFO[os_][exe])
-
-            missing.append((url, filename))
-
-        return missing
-
-    return None
+    return missing if missing else None
 
 
 def add_to_path(bin_path: Path) -> None:
-    """Add the bin folder to the system PATH."""
+    """Add the bin folder to the user PATH without duplicating or injecting system PATH (Windows-safe)."""
     bin_str = str(bin_path)
 
-    if system() == "Windows":
-        creationflags = (
-            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
-            if os_name == "nt" else 0
-        )
-        # Add to PATH in Windows (persistently)
-        subprocess.run(
-            f'setx PATH "%PATH%;{bin_str}"',
-            shell=True,
-            check=False,
-            creationflags=creationflags
-        )
+    current_path = environ.get("PATH", "")
+    if bin_str in current_path.split(pathsep):
+        return  # It's already on the PATH
+
+    if _OS == "Windows":
+        import winreg
+
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
+                user_path, _ = winreg.QueryValueEx(key, "PATH")
+        except FileNotFoundError:
+            user_path = ""
+
+        # Separate and clean entrances
+        paths = [p.strip() for p in user_path.split(";") if p.strip()]
+        if bin_str not in paths:
+            paths.append(bin_str)
+            new_path = ";".join(paths)
+
+            subprocess.run(
+                ['setx', 'PATH', new_path],
+                shell=True,
+                check=False,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+            )
+
     else:
-        # Add to PATH on Linux/macOS (for the current session)
-        shell_config = path.expanduser(
-            "~/.bashrc")  # Or ~/.zshrc depending on the shell
-        with open(shell_config, "a") as f:
-            f.write(f'\nexport PATH="{bin_str}:$PATH"\n')
+        # For Linux/macOS, we add it to ~/.bashrc or ~/.zshrc if it is not there
+        shell_config = path.expanduser("~/.bashrc")
+        if environ.get("SHELL", "").endswith("zsh"):
+            shell_config = path.expanduser("~/.zshrc")
+
+        if path.exists(shell_config):
+            with open(shell_config, "r+") as f:
+                content = f.read()
+                if bin_str not in content:
+                    f.write(f'\nexport PATH="{bin_str}:$PATH"\n')
 
 
 def download_missing(missing: list[tuple[str, str]], loading_dialog: LoadingDialog, ROOT: Path) -> bool:
     """
-    Download missing executables from the provided URLs.
-
-    Args:
-    missing (list[tuple[str, str]]): A list of tuples containing the download URL and filename.
-    loading_dialog (LoadingDialog): Reference to the upload dialog.
+    Download missing executables from the provided URLs, rename them properly,
+    and make them executable on Linux/macOS.
     """
     failed = False
     bin_path = ROOT / "bin"
     makedirs(bin_path, exist_ok=True)
 
     total_files = len(missing)
-    for index, (url, filename) in enumerate(missing, start=1):
-        file_path = path.join(bin_path, path.basename(url))
-        response = get_request(url, stream=True)
+    index = 0
 
-        if response.status_code == 200:
-            total_size = int(response.headers.get(
-                "content-length", 0))  # Total size in bytes
-            downloaded_size = 0
+    for index, (url, _) in enumerate(missing, start=1):
+        filename = path.basename(url)
 
-            with open(file_path, "wb") as file:
-                for chunk in response.iter_content(1024):
-                    if chunk:
-                        file.write(chunk)
-                        downloaded_size += len(chunk)
-
-                        # Calculate progress
-                        percent = int((downloaded_size / total_size)
-                                      * 100) if total_size else 100
-                        loading_dialog.set_value_loading(percent)
-                        QCoreApplication.processEvents()  # Force UI refresh
-
+        # Normalize name according to rules
+        if filename.startswith("yt-dlp"):
+            base_name = "yt-dlp"
+        elif filename.startswith("ffmpeg") or filename.startswith("ffprobe"):
+            base_name = filename.split("-")[0]
         else:
+            base_name = filename  # If no rule matches
+
+        # Add extension
+        if _OS == "Windows":
+            file_name = base_name + ".exe"
+            file_path = bin_path / file_name
+        else:
+            file_path = bin_path / base_name
+
+        try:
+            response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                total_size = int(response.headers.get(
+                    "content-length", 0))  # Total size in bytes
+                downloaded_size = 0
+
+                with open(file_path, "wb") as f:
+                    for chunk in response.iter_content(1024):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+
+                            # Calculate progress
+                            percent = int((downloaded_size / total_size)
+                                          * 100) if total_size else 100
+                            loading_dialog.set_value_loading(percent)
+                            QCoreApplication.processEvents()  # Force UI refresh
+
+                # Adding execute permissions on UNIX systems
+                if _OS != "Windows":
+                    file_path.chmod(file_path.stat().st_mode | stat.S_IXUSR)
+
+            else:
+                print(f"Error al descargar {url}")
+                failed = True
+        except Exception as e:
+            print(f"Excepción al descargar {url}: {e}")
             failed = True
-            return failed
 
         # Update progress bar based on downloaded files
         loading_dialog.set_value_loading(int((index / total_files) * 100))
 
-        # Add the bin folder to the system PATH
-        add_to_path(bin_path)
-        return failed
+    add_to_path(bin_path)
+    return failed
 
 
 def write_debug_log(message):
